@@ -13,9 +13,9 @@ import {
 import * as XLSX from 'xlsx';
 import {
   RAVEN_QUESTIONS,
-  RAVEN_SETS,
   DEFAULT_RAVEN_CONFIG,
   calculateRavenScore,
+  buildRavenPersonalityAnalysis,
   formatTimeMMSS,
 } from '../data/ravenExamData';
 import { OFFICIAL_CLASS_ROSTER } from '../data/schoolStudentsRoster';
@@ -208,6 +208,7 @@ export default function RavenExamTeacherDashboard({ isAdminEmbed = false, onBack
   const handleExportExcel = () => {
     const rows = filteredAttempts.map((a, index) => {
       const calc = calculateRavenScore(a.answers || {});
+      const personality = buildRavenPersonalityAnalysis(calc, a.elapsedSeconds || 0);
       const sets = a.setScores || calc.setScores;
       return {
         '#': index + 1,
@@ -222,11 +223,13 @@ export default function RavenExamTeacherDashboard({ isAdminEmbed = false, onBack
         'العلامة (من 60)': a.score ?? calc.totalScore,
         'النسبة المئوية %': `${a.percentage ?? calc.percentage}%`,
         'المستوى التقييمي': a.level || calc.level,
-        'المجموعة 1 (/12)': sets?.[0]?.correct ?? 0,
-        'المجموعة 2 (/12)': sets?.[1]?.correct ?? 0,
-        'المجموعة 3 (/12)': sets?.[2]?.correct ?? 0,
-        'المجموعة 4 (/12)': sets?.[3]?.correct ?? 0,
-        'المجموعة 5 (/12)': sets?.[4]?.correct ?? 0,
+        'نمط التفكير الشخصي': a.archetypeTitle || personality.archetypeTitle,
+        'أسلوب التعامل مع الوقت': a.pacingLabel || personality.pacingLabel,
+        'المجموعة أ (/12)': sets?.[0]?.correct ?? 0,
+        'المجموعة ب (/12)': sets?.[1]?.correct ?? 0,
+        'المجموعة ج (/12)': sets?.[2]?.correct ?? 0,
+        'المجموعة د (/12)': sets?.[3]?.correct ?? 0,
+        'المجموعة هـ (/12)': sets?.[4]?.correct ?? 0,
         'الأسئلة المجابة': a.answeredCount ?? calc.answeredCount,
         'الوقت المستغرق': formatTimeMMSS(a.elapsedSeconds || 0),
         'تاريخ ووقت التسليم': a.completedAt
@@ -739,29 +742,69 @@ export default function RavenExamTeacherDashboard({ isAdminEmbed = false, onBack
             </div>
 
             <div style={{ padding: '1.25rem 1.5rem' }}>
-              {/* Set breakdown */}
+              {/* Set breakdown & Cognitive Personality Profile */}
               {(() => {
                 const calc = calculateRavenScore(selectedAttempt.answers || {});
+                const personality = buildRavenPersonalityAnalysis(
+                  calc,
+                  selectedAttempt.elapsedSeconds || 0
+                );
                 return (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem', marginBottom: '1.25rem' }}>
-                    {calc.setScores.map((s) => (
-                      <div
-                        key={s.setNumber}
-                        style={{
-                          background: '#f8fafc',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: 12,
-                          padding: '0.6rem',
-                          textAlign: 'center',
-                        }}
-                      >
-                        <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700 }}>{s.name}</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#1e3a8a' }}>
-                          {s.correct} / 12
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem', marginBottom: '1rem' }}>
+                      {calc.setScores.map((s) => (
+                        <div
+                          key={s.setNumber}
+                          style={{
+                            background: '#f8fafc',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: 12,
+                            padding: '0.6rem',
+                            textAlign: 'center',
+                          }}
+                        >
+                          <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700 }}>{s.name}</div>
+                          <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#1e3a8a' }}>
+                            {s.correct} / 12
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div
+                      style={{
+                        background: 'linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%)',
+                        border: '1.5px solid #bfdbfe',
+                        borderRadius: 14,
+                        padding: '1rem 1.15rem',
+                        marginBottom: '1.15rem',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.45rem' }}>
+                        <span style={{ fontSize: '1.35rem' }}>{personality.archetypeIcon}</span>
+                        <div>
+                          <div style={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 800 }}>
+                            تحليل الشخصية الذهنية وأسلوب الحل
+                          </div>
+                          <div style={{ fontSize: '1.08rem', fontWeight: 900, color: personality.archetypeColor }}>
+                            {personality.archetypeTitle} — <span style={{ color: '#475569', fontSize: '0.88rem' }}>({personality.pacingLabel})</span>
+                          </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                      <p style={{ margin: '0 0 0.55rem', fontSize: '0.88rem', color: '#1e293b', lineHeight: 1.65 }}>
+                        {personality.archetypeSummary}
+                      </p>
+                      <div style={{ fontSize: '0.84rem', color: '#334155', marginBottom: '0.45rem' }}>
+                        <strong>⏱️ الإيقاع:</strong> {personality.pacingNote} • <strong>⚖️ التوازن:</strong> {personality.profileBalance}
+                      </div>
+                      <div style={{ fontSize: '0.84rem', color: '#065f46', marginBottom: '0.35rem' }}>
+                        <strong>✨ نقاط القوة:</strong> {personality.strengths.join(' | ')}
+                      </div>
+                      <div style={{ fontSize: '0.84rem', color: '#92400e' }}>
+                        <strong>🎯 توصيات تربوية:</strong> {personality.recommendations.join(' | ')}
+                      </div>
+                    </div>
+                  </>
                 );
               })()}
 

@@ -86,7 +86,7 @@ const Navbar = () => {
     const updateNavState = (rawItems) => {
       let items = [...rawItems].filter(item => !isExcludedFromNavbar(item));
       
-      const standaloneTargets = ['monawaat', 'prep-day', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'learning-corner', 'challenge', 'worksheets', 'parent-polls', 'gratitude-sky', 'stars', 'padlet', 'miftaah', 'mafatih', 'hebrew', 'english', 'math-championship', 'qanat', 'skills-films', 'aflam'];
+      const standaloneTargets = ['monawaat', 'prep-day', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'learning-corner', 'raven-exam', 'challenge', 'worksheets', 'parent-polls', 'gratitude-sky', 'stars', 'padlet', 'miftaah', 'mafatih', 'hebrew', 'english', 'math-championship', 'qanat', 'skills-films', 'aflam'];
       items = items.map(item => standaloneTargets.includes(item.target) ? { ...item, type: 'page' } : item);
 
       if (!items.some(item => item.id === 'nav_parent_polls' || item.target === 'parent-polls')) {
@@ -97,6 +97,17 @@ const Navbar = () => {
           target: "parent-polls",
           category: "main",
           order: 8
+        });
+      }
+
+      if (!items.some(item => item.id === 'nav_raven_exam' || item.target === 'raven-exam')) {
+        items.push({
+          id: "nav_raven_exam",
+          label: "🧠 اختبار رافن المحوسب",
+          type: "page",
+          target: "raven-exam",
+          category: "main",
+          order: 6.5
         });
       }
 
@@ -179,7 +190,7 @@ const Navbar = () => {
           const isScrolled = window.scrollY > 40;
           setScrolled(prev => (prev !== isScrolled ? isScrolled : prev));
 
-          const systemTargets = ['tasbih', 'monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'happiness-mail', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'virtual-museum', 'lost-found', 'family-challenge', 'debate', 'gratitude-sky', 'readers-club', 'padlet', 'miftaah', 'mafatih', 'hebrew', 'english', 'math-championship', 'qanat', 'skills-films', 'aflam'];
+          const systemTargets = ['tasbih', 'monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'happiness-mail', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'raven-exam', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'virtual-museum', 'lost-found', 'family-challenge', 'debate', 'gratitude-sky', 'readers-club', 'padlet', 'miftaah', 'mafatih', 'hebrew', 'english', 'math-championship', 'qanat', 'skills-films', 'aflam'];
           const hash = window.location.hash;
           const isOnCustomPage = hash.startsWith('#/page/') || hash.startsWith('#page/') || systemTargets.some(t => hash.includes(t));
 
@@ -215,7 +226,7 @@ const Navbar = () => {
 
     e.preventDefault();
 
-    const systemPages = ['tasbih', 'monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'happiness-mail', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'virtual-museum', 'lost-found', 'family-challenge', 'debate', 'gratitude-sky', 'readers-club', 'padlet', 'miftaah', 'mafatih', 'qanat', 'skills-films', 'aflam'];
+    const systemPages = ['tasbih', 'monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'happiness-mail', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'raven-exam', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'virtual-museum', 'lost-found', 'family-challenge', 'debate', 'gratitude-sky', 'readers-club', 'padlet', 'miftaah', 'mafatih', 'qanat', 'skills-films', 'aflam'];
 
     if (item.type === 'page' || item.type === 'custom_page' || systemPages.includes(item.target)) {
       const isSystemPage = systemPages.includes(item.target);
@@ -244,7 +255,7 @@ const Navbar = () => {
 
   const getHrefValue = (item) => {
     if (item.type === 'external') return item.target;
-    const systemPages = ['tasbih', 'monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'happiness-mail', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'virtual-museum', 'lost-found', 'family-challenge', 'debate', 'gratitude-sky', 'readers-club', 'mafatih', 'mafateeh', 'padlet', 'miftaah', 'qanat', 'skills-films', 'aflam'];
+    const systemPages = ['tasbih', 'monawaat', 'prep-day', 'principal', 'stem', 'worksheets', 'articles', 'parent-polls', 'happiness-mail', 'appointments', 'astronomy', 'challenge', 'books', 'excellence', 'learning-corner', 'raven-exam', 'news', 'facebook', 'gallery', 'calendar', 'world-ideas', 'virtual-museum', 'lost-found', 'family-challenge', 'debate', 'gratitude-sky', 'readers-club', 'mafatih', 'mafateeh', 'padlet', 'miftaah', 'qanat', 'skills-films', 'aflam'];
     if (systemPages.includes(item.target)) {
       return `#/${item.target}`;
     }

@@ -5,6 +5,7 @@ import {
   RAVEN_QUESTIONS,
   DEFAULT_RAVEN_CONFIG,
   calculateRavenScore,
+  buildRavenPersonalityAnalysis,
   formatTimeMMSS,
 } from '../data/ravenExamData';
 import { OFFICIAL_CLASS_ROSTER } from '../data/schoolStudentsRoster';
@@ -133,6 +134,7 @@ export default function RavenExamPage({ initialMode = 'student' }) {
       const elapsedSeconds = startedAtRef.current
         ? Math.max(1, Math.floor((Date.now() - startedAtRef.current) / 1000))
         : 0;
+      const personality = buildRavenPersonalityAnalysis(calc, elapsedSeconds);
       const completedAt = new Date().toISOString();
 
       const payload = {
@@ -146,6 +148,8 @@ export default function RavenExamPage({ initialMode = 'student' }) {
         answeredCount: calc.answeredCount,
         percentage: calc.percentage,
         level: calc.level,
+        archetypeTitle: personality.archetypeTitle,
+        pacingLabel: personality.pacingLabel,
         setScores: calc.setScores,
         answers: finalAnswers,
         currentQuestion: 60,
@@ -157,6 +161,7 @@ export default function RavenExamPage({ initialMode = 'student' }) {
 
       setFinishSummary({
         ...calc,
+        personality,
         elapsedSeconds,
         finishReason: reason,
         completedAt,
@@ -546,7 +551,7 @@ export default function RavenExamPage({ initialMode = 'student' }) {
                   {/* Per-Set Breakdown */}
                   <div>
                     <h4 style={{ margin: '0 0 0.75rem', fontSize: '1rem', fontWeight: 900, color: '#1e293b' }}>
-                      تفصيل الأداء حسب المجموعات الخمس:
+                      تفصيل الأداء حسب المجموعات الخمس (أ – هـ):
                     </h4>
                     <div className="raven-sets-breakdown">
                       {finishSummary.setScores.map((s) => {
@@ -565,6 +570,108 @@ export default function RavenExamPage({ initialMode = 'student' }) {
                       })}
                     </div>
                   </div>
+
+                  {/* Cognitive & Personality Analysis Card */}
+                  {finishSummary.personality && (
+                    <div
+                      style={{
+                        background: 'linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%)',
+                        border: '2px solid #bfdbfe',
+                        borderRadius: 18,
+                        padding: '1.35rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '1rem',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                        <span
+                          style={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: 14,
+                            background: '#ffffff',
+                            border: '1px solid #cbd5e1',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '1.6rem',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {finishSummary.personality.archetypeIcon}
+                        </span>
+                        <div>
+                          <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748b' }}>
+                            تحليل الشخصية الذهنية وأسلوب التفكير
+                          </div>
+                          <h3
+                            style={{
+                              margin: 0,
+                              fontSize: '1.25rem',
+                              fontWeight: 900,
+                              color: finishSummary.personality.archetypeColor,
+                            }}
+                          >
+                            {finishSummary.personality.archetypeTitle}
+                          </h3>
+                        </div>
+                      </div>
+
+                      <p style={{ margin: 0, fontSize: '0.96rem', lineHeight: 1.75, color: '#1e293b', fontWeight: 600 }}>
+                        {finishSummary.personality.archetypeSummary}
+                      </p>
+
+                      {/* Pacing & Balance */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
+                        <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 12, padding: '0.85rem' }}>
+                          <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#475569', marginBottom: 4 }}>
+                            ⏱️ أسلوب التعامل مع الوقت: <strong style={{ color: '#1e3a8a' }}>{finishSummary.personality.pacingLabel}</strong>
+                          </div>
+                          <div style={{ fontSize: '0.85rem', color: '#334155', lineHeight: 1.55 }}>
+                            {finishSummary.personality.pacingNote}
+                          </div>
+                        </div>
+
+                        <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 12, padding: '0.85rem' }}>
+                          <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#475569', marginBottom: 4 }}>
+                            ⚖️ توازن الأداء البصري والتجريدي
+                          </div>
+                          <div style={{ fontSize: '0.85rem', color: '#334155', lineHeight: 1.55 }}>
+                            {finishSummary.personality.profileBalance}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Strengths */}
+                      <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 12, padding: '0.9rem 1rem' }}>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 900, color: '#065f46', marginBottom: 6 }}>
+                          ✨ أبرز نقاط القوة الشخصية والذهنية:
+                        </div>
+                        <ul style={{ margin: 0, paddingRight: '1.2rem', color: '#064e3b', fontSize: '0.88rem', lineHeight: 1.7 }}>
+                          {finishSummary.personality.strengths.map((str, i) => (
+                            <li key={i}>{str}</li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      {/* Recommendations */}
+                      <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '0.9rem 1rem' }}>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 900, color: '#92400e', marginBottom: 6 }}>
+                          🎯 توصيات تربوية لتطوير القدرات:
+                        </div>
+                        <ul style={{ margin: 0, paddingRight: '1.2rem', color: '#78350f', fontSize: '0.88rem', lineHeight: 1.7 }}>
+                          {finishSummary.personality.recommendations.map((rec, i) => (
+                            <li key={i}>{rec}</li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div style={{ fontSize: '0.78rem', color: '#64748b', textAlign: 'center', lineHeight: 1.5 }}>
+                        ملاحظة تربوية: يُعدّ هذا التحليل مؤشراً تعليمياً داعماً يعكس أسلوب التفكير البصري والمنطقي في هذا التطبيق المحوسب، وليس تشخيصاً نفسياً رسمياً.
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : (
                 <div
