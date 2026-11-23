@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '../firebase';
+import { db, storage } from '../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import QRCode from 'qrcode';
 
 const DEFAULT_GREEN_CHAIR_DATA = {
@@ -28,6 +29,9 @@ const DEFAULT_GREEN_CHAIR_DATA = {
   station3Title: 'آراء الطلاب حول التغيير',
   station3Desc: 'انطباعات الطلاب والطالبات حول التحوّل الذي أحدثته المبادرة في عاداتهم اليومية داخل المدرسة.',
 
+  // معرض مفتوح لرفع صور وأشياء جديدة غير محدودة
+  extraItems: [],
+
   wasteReductionPercent: 68,
   reviewedDecisions: 14,
   participatingClasses: 18,
@@ -49,8 +53,8 @@ const DEFAULT_GREEN_CHAIR_DATA = {
   closingQuote: '«القيادة الحقيقية ليست أن تتحدّث باسم من انتخبوك فقط... بل أن تحمي أيضًا من لا يستطيع انتخابك.»'
 };
 
-// ضغط الصور محليًا لتناسب التخزين السريع في Firestore دون الحاجة لخادم إضافي
-const compressImageToDataUrl = (file, maxWidth = 960, quality = 0.78) => {
+// ضغط الصور إلى Blob لرفعها سريعًا على Firebase Storage (أو DataURL كخطة بديلة)
+const compressImage = (file, maxWidth = 1280, quality = 0.82) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (ev) => {
@@ -62,7 +66,12 @@ const compressImageToDataUrl = (file, maxWidth = 960, quality = 0.78) => {
         canvas.height = Math.round(img.height * scale);
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        canvas.toBlob(
+          (blob) => resolve({ blob, dataUrl }),
+          'image/jpeg',
+          quality
+        );
       };
       img.onerror = reject;
       img.src = ev.target.result;
@@ -72,12 +81,30 @@ const compressImageToDataUrl = (file, maxWidth = 960, quality = 0.78) => {
   });
 };
 
+// رفع ملف إلى Firebase Storage مع إرجاع الرابط المباشر
+const uploadFileToStorage = async (fileOrBlob, folder, fileName) => {
+  const safeName = `${Date.now()}_${String(fileName || 'file').replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+  const storageRef = ref(storage, `green_chair/${folder}/${safeName}`);
+  await uploadBytes(storageRef, fileOrBlob);
+  return await getDownloadURL(storageRef);
+};
+
 const GreenChairAdminTab = () => {
   const [form, setForm] = useState(DEFAULT_GREEN_CHAIR_DATA);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingField, setUploadingField] = useState('');
   const [statusMsg, setStatusMsg] = useState(null);
   const [qrDataUrl, setQrDataUrl] = useState('');
+
+  // نموذج إضافة عنصر / صورة / نشاط جديد
+  const [newItem, setNewItem] = useState({
+    title: '',
+    desc: '',
+    tag: 'توثيق ميداني 🌿',
+    imageUrl: '',
+    linkUrl: ''
+  });
 
   const liveUrl = 'https://musherfe.com/green-chair.html';
 
@@ -98,7 +125,12 @@ const GreenChairAdminTab = () => {
       try {
         const snap = await getDoc(doc(db, 'schoolGuide', 'green_chair'));
         if (mounted && snap.exists()) {
-          setForm({ ...DEFAULT_GREEN_CHAIR_DATA, ...snap.data() });
+          const data = snap.data();
+          setForm({
+            ...DEFAULT_GREEN_CHAIR_DATA,
+            ...data,
+            extraItems: Array.isArray(data.extraItems) ? data.extraItems : []
+          });
         }
       } catch (err) {
         console.error('Error loading Green Chair settings:', err);
@@ -117,18 +149,144 @@ const GreenChairAdminTab = () => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  // رفع صورة (للمحطات أو لقاء المجلس المحلي أو العنصر الجديد)
+  const uploadSingleImage = async (file, folder = 'images') => {
+    const { blob, dataUrl } = await compressImage(file);
+    try {
+      if (blob) {
+        const url = await uploadFileToStorage(blob, folder, file.name.replace(/\.[^.]+$/, '.jpg'));
+        return url;
+      }
+    } catch (storageErr) {
+      console.warn('Storage upload fallback to DataURL:', storageErr);
+    }
+    return dataUrl;
+  };
+
   const handleImageUpload = async (fieldKey, event) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    setUploadingField(fieldKey);
+    setStatusMsg({ type: 'info', text: '⏳ جارٍ رفع الصورة إلى الموقع...' });
     try {
-      setStatusMsg({ type: 'info', text: 'جارٍ تجهيز وضغط الصورة...' });
-      const dataUrl = await compressImageToDataUrl(file);
-      updateField(fieldKey, dataUrl);
-      setStatusMsg({ type: 'success', text: '✅ تم تحميل الصورة بنجاح! اضغط «حفظ ونشر التعديلات» لاعتمادها.' });
+      const url = await uploadSingleImage(file, 'stations');
+      updateField(fieldKey, url);
+      setStatusMsg({ type: 'success', text: '✅ تم رفع الصورة بنجاح! اضغط «حفظ ونشر التعديلات» لاعتمادها على الموقع.' });
     } catch (err) {
       console.error(err);
-      setStatusMsg({ type: 'error', text: 'تعذّر قراءة الصورة. تأكد من أنها صورة صالحة.' });
+      setStatusMsg({ type: 'error', text: '❌ تعذّر رفع الصورة. تأكد من أنها صورة صالحة.' });
+    } finally {
+      setUploadingField('');
+      event.target.value = '';
     }
+  };
+
+  // رفع فيديو MP4 أو ملف PDF للميثاق مباشرة
+  const handleDirectFileUpload = async (fieldKey, folder, label, event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setUploadingField(fieldKey);
+    setStatusMsg({ type: 'info', text: `⏳ جارٍ رفع ${label} إلى السحابة...` });
+    try {
+      const url = await uploadFileToStorage(file, folder, file.name);
+      updateField(fieldKey, url);
+      setStatusMsg({ type: 'success', text: `✅ تم رفع ${label} بنجاح! اضغط «حفظ ونشر التعديلات» لنشره فورًا.` });
+    } catch (err) {
+      console.error(err);
+      setStatusMsg({
+        type: 'error',
+        text: `❌ تعذّر رفع ${label}: ${err.message || 'تأكد من حجم الملف وصلاحيات التخزين، أو الصق رابطًا مباشرًا.'}`
+      });
+    } finally {
+      setUploadingField('');
+      event.target.value = '';
+    }
+  };
+
+  // رفع صورة للعنصر الجديد قبل إضافته
+  const handleNewItemImageUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setUploadingField('newItem');
+    setStatusMsg({ type: 'info', text: '⏳ جارٍ رفع صورة العنصر الجديد...' });
+    try {
+      const url = await uploadSingleImage(file, 'gallery');
+      setNewItem((prev) => ({ ...prev, imageUrl: url }));
+      setStatusMsg({ type: 'success', text: '✅ تم تجهيز الصورة! أضف عنوانًا ثم اضغط «إضافة للموقع».' });
+    } catch (err) {
+      console.error(err);
+      setStatusMsg({ type: 'error', text: '❌ تعذّر رفع الصورة.' });
+    } finally {
+      setUploadingField('');
+      event.target.value = '';
+    }
+  };
+
+  // رفع عدة صور دفعة واحدة إلى المعرض المفتوح
+  const handleBulkPhotosUpload = async (event) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+    setUploadingField('bulk');
+    setStatusMsg({ type: 'info', text: `⏳ جارٍ رفع ${files.length} صور إلى المعرض...` });
+    try {
+      const uploadedItems = [];
+      for (const file of files) {
+        const url = await uploadSingleImage(file, 'gallery');
+        uploadedItems.push({
+          id: `item_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          title: file.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' '),
+          desc: 'توثيق ميداني جديد لمبادرة الكرسي الأخضر في مدرسة مشيرفة الابتدائية.',
+          tag: 'صورة جديدة 📸',
+          imageUrl: url,
+          linkUrl: '',
+          createdAt: new Date().toISOString()
+        });
+      }
+      setForm((prev) => ({
+        ...prev,
+        extraItems: [...uploadedItems, ...(prev.extraItems || [])]
+      }));
+      setStatusMsg({
+        type: 'success',
+        text: `✅ تم رفع ${uploadedItems.length} صور بنجاح! اضغط «حفظ ونشر التعديلات» لظهورها فورًا على الموقع.`
+      });
+    } catch (err) {
+      console.error(err);
+      setStatusMsg({ type: 'error', text: '❌ حدث خطأ أثناء رفع الصور.' });
+    } finally {
+      setUploadingField('');
+      event.target.value = '';
+    }
+  };
+
+  const handleAddNewItem = () => {
+    if (!newItem.title.trim() && !newItem.imageUrl.trim()) {
+      setStatusMsg({ type: 'error', text: 'يرجى رفع صورة أو كتابة عنوان على الأقل قبل الإضافة.' });
+      return;
+    }
+    const created = {
+      id: `item_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      title: newItem.title.trim() || 'توثيق جديد للمبادرة',
+      desc: newItem.desc.trim(),
+      tag: newItem.tag.trim() || 'مستجدات 🌿',
+      imageUrl: newItem.imageUrl.trim(),
+      linkUrl: newItem.linkUrl.trim(),
+      createdAt: new Date().toISOString()
+    };
+    setForm((prev) => ({
+      ...prev,
+      extraItems: [created, ...(prev.extraItems || [])]
+    }));
+    setNewItem({ title: '', desc: '', tag: 'توثيق ميداني 🌿', imageUrl: '', linkUrl: '' });
+    setStatusMsg({ type: 'success', text: '✅ تمت الإضافة إلى القائمة! اضغط «حفظ ونشر التعديلات» لظهورها على الموقع.' });
+  };
+
+  const handleDeleteExtraItem = (id) => {
+    if (!window.confirm('هل تريد حذف هذا العنصر من الصفحة؟')) return;
+    setForm((prev) => ({
+      ...prev,
+      extraItems: (prev.extraItems || []).filter((item) => item.id !== id)
+    }));
   };
 
   const handleSave = async (e) => {
@@ -138,6 +296,7 @@ const GreenChairAdminTab = () => {
     try {
       const payload = {
         ...form,
+        extraItems: Array.isArray(form.extraItems) ? form.extraItems : [],
         wasteReductionPercent: Number(form.wasteReductionPercent) || 0,
         reviewedDecisions: Number(form.reviewedDecisions) || 0,
         participatingClasses: Number(form.participatingClasses) || 0,
@@ -150,13 +309,13 @@ const GreenChairAdminTab = () => {
       await setDoc(doc(db, 'schoolGuide', 'green_chair'), payload, { merge: true });
       setStatusMsg({
         type: 'success',
-        text: '🎉 تم حفظ التعديلات بنجاح! ستظهر فورًا على صفحة الكرسي الأخضر المباشرة.'
+        text: '🎉 تم حفظ ونشر جميع التعديلات والصور بنجاح! ستظهر فورًا على https://musherfe.com/green-chair.html'
       });
     } catch (err) {
       console.error('Error saving Green Chair config:', err);
       setStatusMsg({
         type: 'error',
-        text: '❌ حدث خطأ أثناء الحفظ: ' + (err.message || 'تأكد من صلاحيات المدير وحجم الصور.')
+        text: '❌ حدث خطأ أثناء الحفظ: ' + (err.message || 'تأكد من صلاحيات المدير.')
       });
     } finally {
       setSaving(false);
@@ -215,6 +374,8 @@ const GreenChairAdminTab = () => {
     borderBottom: '2px solid #e8f3ee',
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
     gap: '8px'
   };
 
@@ -244,7 +405,7 @@ const GreenChairAdminTab = () => {
             الكرسي الأخضر... صوتٌ لمن لا صوت له
           </h2>
           <p style={{ margin: '0 0 1rem', fontSize: '0.94rem', opacity: 0.92 }}>
-            عدّل الفيديو، الصور، الأرقام النهائية للتجربة، ووثيقة الميثاق من هنا؛ تُحدَّث الصفحة المباشرة فورًا دون الحاجة لتعديل الكود.
+            ارفع الصور والفيديو وملف الميثاق، وأضف مستجدات وتوثيقات جديدة مباشرة من هنا؛ تُنشر فورًا على الصفحة المباشرة.
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem' }}>
             <a
@@ -270,7 +431,7 @@ const GreenChairAdminTab = () => {
             <button
               type="button"
               onClick={handleSave}
-              disabled={saving}
+              disabled={saving || Boolean(uploadingField)}
               style={{
                 background: '#40916C',
                 color: '#ffffff',
@@ -360,12 +521,223 @@ const GreenChairAdminTab = () => {
       )}
 
       <form onSubmit={handleSave}>
+        {/* 0. قسم إضافة صور وأشياء جديدة للموقع (المعرض والمستجدات) */}
+        <div style={{ ...cardStyle, border: '2px solid #2D6A4F', background: '#f8fcfa' }}>
+          <div style={sectionTitleStyle}>
+            <span>✨ إضافة صور وأشياء جديدة للموقع ({(form.extraItems || []).length})</span>
+            <label
+              style={{
+                background: '#1B4332',
+                color: '#ffffff',
+                padding: '0.5rem 1rem',
+                borderRadius: '999px',
+                fontSize: '0.84rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <span>📤 رفع عدة صور دفعة واحدة</span>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleBulkPhotosUpload}
+                style={{ display: 'none' }}
+              />
+            </label>
+          </div>
+
+          {/* نموذج إضافة عنصر جديد مفصّل */}
+          <div
+            style={{
+              background: '#ffffff',
+              border: '1px dashed #40916C',
+              borderRadius: '14px',
+              padding: '1rem',
+              marginBottom: '1.1rem'
+            }}
+          >
+            <div style={{ fontWeight: 900, color: '#1B4332', marginBottom: '0.75rem', fontSize: '0.95rem' }}>
+              ➕ أضف صورة، نشاطًا، شهادة، أو خبرًا جديدًا:
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem', marginBottom: '0.85rem' }}>
+              <div>
+                <label style={{ ...labelStyle, fontSize: '0.84rem' }}>العنوان</label>
+                <input
+                  type="text"
+                  style={inputStyle}
+                  placeholder="مثال: جولة محامي الطبيعة في الصف الخامس"
+                  value={newItem.title}
+                  onChange={(e) => setNewItem((p) => ({ ...p, title: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label style={{ ...labelStyle, fontSize: '0.84rem' }}>التصنيف / الشارة</label>
+                <select
+                  style={inputStyle}
+                  value={newItem.tag}
+                  onChange={(e) => setNewItem((p) => ({ ...p, tag: e.target.value }))}
+                >
+                  <option value="توثيق ميداني 🌿">توثيق ميداني 🌿</option>
+                  <option value="صورة جديدة 📸">صورة جديدة 📸</option>
+                  <option value="نشاط صفي 🎓">نشاط صفي 🎓</option>
+                  <option value="اعتراض بيئي 🟥">اعتراض بيئي 🟥</option>
+                  <option value="شهادة ودعم 🤝">شهادة ودعم 🤝</option>
+                  <option value="إنجاز جديد 🏆">إنجاز جديد 🏆</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ ...labelStyle, fontSize: '0.84rem' }}>رفع صورة من الجهاز</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleNewItemImageUpload}
+                  style={{ fontSize: '0.84rem', width: '100%' }}
+                />
+              </div>
+              <div>
+                <label style={{ ...labelStyle, fontSize: '0.84rem' }}>رابط إضافي (اختياري: فيديو / ملف / خبر)</label>
+                <input
+                  type="url"
+                  dir="ltr"
+                  style={inputStyle}
+                  placeholder="https://..."
+                  value={newItem.linkUrl}
+                  onChange={(e) => setNewItem((p) => ({ ...p, linkUrl: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '0.85rem' }}>
+              <label style={{ ...labelStyle, fontSize: '0.84rem' }}>الوصف / التفاصيل</label>
+              <textarea
+                rows={2}
+                style={inputStyle}
+                placeholder="اكتب وصفًا قصيرًا يظهر أسفل الصورة أو البطاقة..."
+                value={newItem.desc}
+                onChange={(e) => setNewItem((p) => ({ ...p, desc: e.target.value }))}
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.85rem' }}>
+              {newItem.imageUrl && (
+                <img
+                  src={newItem.imageUrl}
+                  alt="معاينة"
+                  style={{ width: '76px', height: '56px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                />
+              )}
+              <button
+                type="button"
+                onClick={handleAddNewItem}
+                disabled={uploadingField === 'newItem'}
+                style={{
+                  background: '#2D6A4F',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '0.65rem 1.35rem',
+                  borderRadius: '10px',
+                  fontWeight: 900,
+                  fontSize: '0.9rem',
+                  cursor: 'pointer'
+                }}
+              >
+                {uploadingField === 'newItem' ? '⏳ جارٍ رفع الصورة...' : '➕ إضافة إلى الصفحة'}
+              </button>
+            </div>
+          </div>
+
+          {/* قائمة العناصر والصور المضافة */}
+          {(form.extraItems || []).length === 0 ? (
+            <div style={{ textAlign: 'center', color: '#64748b', fontSize: '0.9rem', padding: '0.8rem' }}>
+              لا توجد صور أو مستجدات إضافية بعد. ارفع صورًا أو أضف عنصرًا جديدًا من الأعلى ليظهر في قسم التوثيق بالموقع.
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.9rem' }}>
+              {(form.extraItems || []).map((item) => (
+                <div
+                  key={item.id}
+                  style={{
+                    background: '#ffffff',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column'
+                  }}
+                >
+                  {item.imageUrl && (
+                    <img
+                      src={item.imageUrl}
+                      alt={item.title}
+                      style={{ width: '100%', height: '130px', objectFit: 'cover' }}
+                    />
+                  )}
+                  <div style={{ padding: '0.75rem', flex: 1 }}>
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        background: '#e8f3ee',
+                        color: '#1B4332',
+                        padding: '2px 8px',
+                        borderRadius: '999px',
+                        marginBottom: '0.4rem'
+                      }}
+                    >
+                      {item.tag || 'توثيق 🌿'}
+                    </span>
+                    <div style={{ fontWeight: 800, fontSize: '0.92rem', color: '#1B4332', marginBottom: '0.25rem' }}>
+                      {item.title}
+                    </div>
+                    {item.desc && (
+                      <div style={{ fontSize: '0.82rem', color: '#475569' }}>{item.desc}</div>
+                    )}
+                  </div>
+                  <div style={{ padding: '0.5rem 0.75rem', borderTop: '1px solid #f1f5f9', textAlign: 'left' }}>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteExtraItem(item.id)}
+                      style={{
+                        background: '#fff1f2',
+                        color: '#be123c',
+                        border: '1px solid #fecdd3',
+                        borderRadius: '8px',
+                        padding: '4px 10px',
+                        fontSize: '0.78rem',
+                        fontWeight: 800,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      🗑️ حذف
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* 1. الفيديو والتوثيق الميداني */}
         <div style={cardStyle}>
-          <div style={sectionTitleStyle}>🎬 1. فيديو المبادرة (45 ثانية)</div>
+          <div style={sectionTitleStyle}><span>🎬 1. فيديو المبادرة (45 ثانية)</span></div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
             <div>
-              <label style={labelStyle}>رابط الفيديو (YouTube أو MP4 مباشر)</label>
+              <label style={labelStyle}>رفع ملف فيديو MP4 من الجهاز</label>
+              <input
+                type="file"
+                accept="video/mp4,video/webm,video/quicktime"
+                onChange={(e) => handleDirectFileUpload('videoUrl', 'videos', 'الفيديو', e)}
+                style={{ fontSize: '0.86rem', width: '100%', marginBottom: '0.5rem' }}
+              />
+              {uploadingField === 'videoUrl' && <div style={{ fontSize: '0.82rem', color: '#2D6A4F', fontWeight: 700 }}>⏳ جارٍ رفع الفيديو...</div>}
+            </div>
+            <div>
+              <label style={labelStyle}>أو لصق رابط YouTube / MP4 مباشر</label>
               <input
                 type="url"
                 style={inputStyle}
@@ -398,7 +770,7 @@ const GreenChairAdminTab = () => {
 
         {/* 2. صور المحطات الثلاث */}
         <div style={cardStyle}>
-          <div style={sectionTitleStyle}>📸 2. المحطات الثلاث (المبادرة في الميدان)</div>
+          <div style={sectionTitleStyle}><span>📸 2. المحطات الثلاث الرئيسية (المبادرة في الميدان)</span></div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.1rem' }}>
             {[
               { num: 1, imgKey: 'station1Img', titleKey: 'station1Title', descKey: 'station1Desc', badge: 'محطة 1' },
@@ -488,7 +860,7 @@ const GreenChairAdminTab = () => {
 
         {/* 3. الأثر بالأرقام (العدّادات + قبل وبعد) */}
         <div style={cardStyle}>
-          <div style={sectionTitleStyle}>📊 3. الأثر بالأرقام (العدّادات وقياس قبل وبعد)</div>
+          <div style={sectionTitleStyle}><span>📊 3. الأثر بالأرقام (العدّادات وقياس قبل وبعد)</span></div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.15rem' }}>
             <div>
               <label style={labelStyle}>نسبة الانخفاض في النفايات (%)</label>
@@ -560,15 +932,22 @@ const GreenChairAdminTab = () => {
 
         {/* 4. المأسسة والشراكة المجتمعية */}
         <div style={cardStyle}>
-          <div style={sectionTitleStyle}>🤝 4. الميثاق المدرسي ودعم قسم الصحة في المجلس المحلي</div>
+          <div style={sectionTitleStyle}><span>🤝 4. الميثاق المدرسي ودعم قسم الصحة في المجلس المحلي</span></div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.1rem' }}>
             <div>
-              <label style={labelStyle}>رابط ملف PDF لميثاق الكرسي الأخضر (اختياري)</label>
+              <label style={labelStyle}>رفع ملف ميثاق الكرسي الأخضر (PDF أو صورة)</label>
+              <input
+                type="file"
+                accept="application/pdf,image/*"
+                onChange={(e) => handleDirectFileUpload('charterPdfUrl', 'docs', 'ملف الميثاق', e)}
+                style={{ fontSize: '0.85rem', width: '100%', marginBottom: '0.5rem' }}
+              />
+              <label style={{ ...labelStyle, fontSize: '0.82rem' }}>أو لصق رابط ملف PDF</label>
               <input
                 type="url"
                 dir="ltr"
                 style={{ ...inputStyle, marginBottom: '0.9rem' }}
-                placeholder="https://drive.google.com/... أو /docs/charter.pdf"
+                placeholder="https://drive.google.com/... أو رابط مباشر"
                 value={form.charterPdfUrl}
                 onChange={(e) => updateField('charterPdfUrl', e.target.value)}
               />
@@ -632,7 +1011,7 @@ const GreenChairAdminTab = () => {
 
         {/* 5. النصوص الرئيسية والخاتمة */}
         <div style={cardStyle}>
-          <div style={sectionTitleStyle}>✍️ 5. النصوص الرئيسية والهوية</div>
+          <div style={sectionTitleStyle}><span>✍️ 5. النصوص الرئيسية والهوية</span></div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
             <div>
               <label style={labelStyle}>اسم الطالبة</label>
@@ -657,7 +1036,7 @@ const GreenChairAdminTab = () => {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.85rem', justifyContent: 'space-between', alignItems: 'center' }}>
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || Boolean(uploadingField)}
             style={{
               background: 'linear-gradient(135deg, #1B4332 0%, #2D6A4F 100%)',
               color: '#ffffff',

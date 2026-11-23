@@ -1709,6 +1709,12 @@
             </div>
           </article>
         </div>
+
+        <!-- مستجدات وصور إضافية تُدار مباشرة من لوحة التحكم (تظهر تلقائيًا عند إضافة عناصر جديدة) -->
+        <div id="extraItemsBlock" style="display: none; margin-top: 38px;">
+          <h3 class="questions-title" style="margin-bottom: 18px;">✨ مستجدات وتوثيقات إضافية من الميدان</h3>
+          <div class="stations-grid" id="extraItemsGrid"></div>
+        </div>
       </div>
     </section>
 
@@ -2096,8 +2102,75 @@
       if (SITE_CONFIG.councilPhotoUrl) {
         const councilBox = document.getElementById("councilMeetingPhoto");
         if (councilBox) {
-          councilBox.innerHTML = `<img src="${SITE_CONFIG.councilPhotoUrl}" alt="لقاء دعم مبادرة الكرسي الأخضر مع قسم الصحة في المجلس المحلي" loading="lazy" />`;
+          councilBox.innerHTML = `<img src="${SITE_CONFIG.councilPhotoUrl}" alt="لقاء دعم مبادرة الكرسي الأخضر مع قسم الصحة في المجلس المحلي" loading="lazy" style="cursor:zoom-in;" />`;
         }
+      }
+
+      // 3.5. عرض الصور والمستجدات الإضافية المرفوعة من لوحة التحكم
+      const extraBlock = document.getElementById("extraItemsBlock");
+      const extraGrid = document.getElementById("extraItemsGrid");
+      if (extraBlock && extraGrid && Array.isArray(remote.extraItems) && remote.extraItems.length > 0) {
+        extraGrid.innerHTML = "";
+        remote.extraItems.forEach((item) => {
+          const card = document.createElement("article");
+          card.className = "station-card";
+
+          if (item.imageUrl) {
+            const media = document.createElement("div");
+            media.className = "station-media";
+            const img = document.createElement("img");
+            img.src = item.imageUrl;
+            img.alt = item.title || "توثيق مبادرة الكرسي الأخضر";
+            img.loading = "lazy";
+            img.style.cursor = "zoom-in";
+            media.appendChild(img);
+            if (item.tag) {
+              const badge = document.createElement("span");
+              badge.className = "station-badge" + (item.tag.includes("اعتراض") ? " red" : "");
+              badge.textContent = item.tag;
+              media.appendChild(badge);
+            }
+            card.appendChild(media);
+          }
+
+          const body = document.createElement("div");
+          body.className = "station-body";
+          if (!item.imageUrl && item.tag) {
+            const pill = document.createElement("span");
+            pill.className = "charter-pill";
+            pill.style.marginBottom = "8px";
+            pill.style.display = "inline-block";
+            pill.textContent = item.tag;
+            body.appendChild(pill);
+          }
+          if (item.title) {
+            const h4 = document.createElement("h4");
+            h4.textContent = item.title;
+            body.appendChild(h4);
+          }
+          if (item.desc) {
+            const p = document.createElement("p");
+            p.textContent = item.desc;
+            body.appendChild(p);
+          }
+          if (item.linkUrl) {
+            const a = document.createElement("a");
+            a.href = item.linkUrl;
+            a.target = "_blank";
+            a.rel = "noopener noreferrer";
+            a.className = "btn-outline";
+            a.style.marginTop = "12px";
+            a.style.padding = "7px 14px";
+            a.style.fontSize = "0.84rem";
+            a.textContent = "عرض التفاصيل ←";
+            body.appendChild(a);
+          }
+          card.appendChild(body);
+          extraGrid.appendChild(card);
+        });
+        extraBlock.style.display = "block";
+      } else if (extraBlock) {
+        extraBlock.style.display = "none";
       }
 
       // 4. ضبط قيم العدّادات
@@ -2142,6 +2215,28 @@
       }
     }
 
+    // تحويل قيم Firestore REST إلى كائنات JS عادية (يدعم النصوص والأرقام والمصفوفات والكائنات)
+    function decodeFirestoreValue(valObj) {
+      if (!valObj || typeof valObj !== "object") return undefined;
+      if ("stringValue" in valObj) return valObj.stringValue;
+      if ("integerValue" in valObj) return Number(valObj.integerValue);
+      if ("doubleValue" in valObj) return Number(valObj.doubleValue);
+      if ("booleanValue" in valObj) return Boolean(valObj.booleanValue);
+      if ("arrayValue" in valObj) {
+        const vals = valObj.arrayValue && Array.isArray(valObj.arrayValue.values) ? valObj.arrayValue.values : [];
+        return vals.map(decodeFirestoreValue);
+      }
+      if ("mapValue" in valObj) {
+        const fields = (valObj.mapValue && valObj.mapValue.fields) || {};
+        const out = {};
+        Object.keys(fields).forEach((k) => {
+          out[k] = decodeFirestoreValue(fields[k]);
+        });
+        return out;
+      }
+      return null;
+    }
+
     // جلب الإعدادات المحفوظة من لوحة التحكم في Firestore تلقائيًا
     (async function syncFromAdminDashboard() {
       applyConfigToDOM({});
@@ -2155,17 +2250,25 @@
         if (!json || !json.fields) return;
         const parsed = {};
         Object.keys(json.fields).forEach((key) => {
-          const valObj = json.fields[key];
-          if ("stringValue" in valObj) parsed[key] = valObj.stringValue;
-          else if ("integerValue" in valObj) parsed[key] = Number(valObj.integerValue);
-          else if ("doubleValue" in valObj) parsed[key] = Number(valObj.doubleValue);
-          else if ("booleanValue" in valObj) parsed[key] = Boolean(valObj.booleanValue);
+          parsed[key] = decodeFirestoreValue(json.fields[key]);
         });
         applyConfigToDOM(parsed);
       } catch (err) {
         // fallback gracefully to local SITE_CONFIG
       }
     })();
+
+    // تكبير أي صورة عند الضغط عليها (Lightbox) لسهولة المعاينة على الهاتف
+    document.addEventListener("click", (e) => {
+      const img = e.target.closest(".station-media img, .meeting-photo-box img");
+      if (!img) return;
+      const overlay = document.createElement("div");
+      overlay.style.cssText =
+        "position:fixed;inset:0;background:rgba(8,23,17,0.92);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;cursor:zoom-out;";
+      overlay.innerHTML = `<img src="${img.src}" alt="${img.alt || ''}" style="max-width:100%;max-height:92vh;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,0.5);" />`;
+      overlay.addEventListener("click", () => overlay.remove());
+      document.body.appendChild(overlay);
+    });
 
     /* =========================================================================
        التفاعلات الحركية (Scroll Progress + Reveal + Interactive Elements)
