@@ -88,6 +88,25 @@ const ImportantLinks = () => {
           (l.title && (l.title.includes('تسريح الطلاب') || l.title.includes('إذن الخروج')))
         ));
 
+        // Ensure "الكرسي الأخضر" initiative external link is always visible
+        const hasGreenChair = filteredList.some(l =>
+          l.id === 'link_green_chair' ||
+          (l.url && l.url.includes('green-chair')) ||
+          (l.title && l.title.includes('الكرسي الأخضر'))
+        );
+        if (!hasGreenChair) {
+          filteredList.push({
+            id: 'link_green_chair',
+            title: 'الكرسي الأخضر... صوتٌ لمن لا صوت له',
+            desc: 'مبادرة طلابية مرشحة للبرلمان القطري — الطالبة شام أغبارية (مدرسة مشيرفة الابتدائية): آلية «محامي الطبيعة» لصناعة الحلول الوقائية.',
+            url: '/green-chair.html',
+            icon: 'fa-leaf',
+            badge: 'مبادرة البرلمان القطري 🌿',
+            order: 0,
+            createdAt: '2026-11-23T07:00:00.000Z'
+          });
+        }
+
         // Sort: items with defined order first (order 1..27), then custom items by creation date
         filteredList.sort((a, b) => {
           if (a.order !== undefined && b.order !== undefined && a.order !== b.order) {
@@ -228,8 +247,11 @@ const ImportantLinks = () => {
             const isServices = link.url?.includes('services') || link.badge?.includes('منصة الخدمات') || link.title?.includes('منصة الخدمات');
             const isAflam = link.url?.includes('skills-films') || link.url?.includes('aflam') || link.badge?.includes('أفلام المهارات') || link.title?.includes('أفلام المهارات');
             const isQanat = link.url?.includes('qanat') || link.badge?.includes('تعلّم وتمتّع') || link.title?.includes('القناة الرقمية');
+            const isGreenChair = link.url?.includes('green-chair') || link.title?.includes('الكرسي الأخضر');
             let iconGradient = undefined;
-            if (isTab) {
+            if (isGreenChair) {
+              iconGradient = 'linear-gradient(135deg, #1B4332 0%, #2D6A4F 100%)';
+            } else if (isTab) {
               iconGradient = 'linear-gradient(135deg, #1b5e3a 0%, #2f855a 50%, #0b6bcb 100%)';
             } else if (isMiftaah) {
               iconGradient = 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)';
@@ -570,7 +592,24 @@ const ImportantLinks = () => {
                         <span>🎨</span> منوعات وإبداع
                       </span>
                     )}
-                    {link.badge && !isAi && !isKiosk && !isExcellence && !isTasbih && !isMonawaat && !isMafatih && (
+                    {isGreenChair && (
+                      <span style={{
+                        background: 'linear-gradient(135deg, #1B4332 0%, #2D6A4F 100%)',
+                        color: '#ffffff',
+                        fontSize: '0.68rem',
+                        fontWeight: 900,
+                        padding: '2px 8px',
+                        borderRadius: '20px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        boxShadow: '0 2px 6px rgba(27,67,50,0.32)',
+                        lineHeight: 1.4
+                      }}>
+                        <span>🌿</span> مبادرة البرلمان القطري
+                      </span>
+                    )}
+                    {link.badge && !isGreenChair && !isAi && !isKiosk && !isExcellence && !isTasbih && !isMonawaat && !isMafatih && (
                       <span style={{
                         background: '#eff6ff',
                         color: '#1d4ed8',
