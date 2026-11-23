@@ -341,10 +341,6 @@ export default function RavenExamTeacherDashboard({ isAdminEmbed = false, onBack
                 <i className="fas fa-user-graduate"></i>
                 شاشة الطالب
               </button>
-              <a href="#/" className="raven-btn-ghost">
-                <i className="fas fa-home"></i>
-                الرئيسية
-              </a>
             </div>
           </div>
         </div>

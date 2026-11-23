@@ -464,13 +464,9 @@ export default function RavenExamPage({ initialMode = 'student' }) {
               </div>
               <div>
                 <h2 className="raven-brand-title">اختبار رافن المحوسب</h2>
-                <p className="raven-brand-sub">مدرسة مشيرفة الابتدائية</p>
+                <p className="raven-brand-sub">تقييم التفكير البصري والمنطقي</p>
               </div>
             </div>
-            <a href="#/" className="raven-btn-ghost">
-              <i className="fas fa-home"></i>
-              العودة لموقع المدرسة
-            </a>
           </div>
         </div>
 
@@ -688,13 +684,10 @@ export default function RavenExamPage({ initialMode = 'student' }) {
               )}
 
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap', marginTop: '0.5rem' }}>
-                <a href="#/" className="raven-btn-teacher" style={{ textDecoration: 'none', padding: '0.75rem 1.5rem' }}>
-                  <i className="fas fa-home"></i>
-                  العودة إلى موقع مدرسة مشيرفة
-                </a>
                 <button
                   type="button"
-                  className="raven-btn-ghost"
+                  className="raven-btn-teacher"
+                  style={{ padding: '0.75rem 1.5rem' }}
                   onClick={() => {
                     setPhase('welcome');
                     setSelectedStudentName('');
@@ -703,7 +696,7 @@ export default function RavenExamPage({ initialMode = 'student' }) {
                   }}
                 >
                   <i className="fas fa-redo"></i>
-                  طالب جديد
+                  بدء اختبار لطالب جديد
                 </button>
               </div>
             </div>
@@ -726,7 +719,7 @@ export default function RavenExamPage({ initialMode = 'student' }) {
             </div>
             <div>
               <h2 className="raven-brand-title">اختبار المصفوفات المتتابعة (رافن)</h2>
-              <p className="raven-brand-sub">مدرسة مشيرفة الابتدائية — الامتحان المحوسب</p>
+              <p className="raven-brand-sub">تقييم التفكير البصري والمنطقي — الاختبار المحوسب</p>
             </div>
           </div>
 
@@ -739,10 +732,6 @@ export default function RavenExamPage({ initialMode = 'student' }) {
               <i className="fas fa-chalkboard-teacher"></i>
               لوحة مراقبة المعلم
             </button>
-            <a href="#/" className="raven-btn-ghost">
-              <i className="fas fa-home"></i>
-              الرئيسية
-            </a>
           </div>
         </div>
       </div>

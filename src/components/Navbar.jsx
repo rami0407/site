@@ -80,6 +80,7 @@ const Navbar = () => {
       if (id === 'nav_2' || id === 'nav_initiatives' || target === 'initiatives' || label.includes('المبادرات')) return true;
       if (id === 'nav_articles' || target === 'articles' || label.includes('مقالات')) return true;
       if (id === 'nav_happiness_mail' || target === 'happiness-mail' || label.includes('بريد السعادة') || label.includes('بريد التميز')) return true;
+      if (id === 'nav_raven_exam' || target.includes('raven') || label.includes('رافن')) return true;
       return false;
     };
 
@@ -97,17 +98,6 @@ const Navbar = () => {
           target: "parent-polls",
           category: "main",
           order: 8
-        });
-      }
-
-      if (!items.some(item => item.id === 'nav_raven_exam' || item.target === 'raven-exam')) {
-        items.push({
-          id: "nav_raven_exam",
-          label: "🧠 اختبار رافن المحوسب",
-          type: "page",
-          target: "raven-exam",
-          category: "main",
-          order: 6.5
         });
       }
 
