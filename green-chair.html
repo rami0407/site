@@ -1987,9 +1987,80 @@
     };
 
     /* =========================================================================
-       تطبيق الإعدادات تلقائيًا على الصفحة
+       تطبيق الإعدادات تلقائيًا على الصفحة (محليًا + مزامنة فورية من لوحة التحكم)
        ========================================================================= */
-    (function initContentFromConfig() {
+    let activeBeforeAfterMetric = "cups";
+
+    function applyConfigToDOM(remote = {}) {
+      // دمج الإعدادات الواردة من لوحة التحكم (Firestore) مع SITE_CONFIG
+      if (remote.videoUrl !== undefined) SITE_CONFIG.videoUrl = remote.videoUrl;
+      if (remote.station1Img !== undefined) SITE_CONFIG.stationImages.station1 = remote.station1Img;
+      if (remote.station2Img !== undefined) SITE_CONFIG.stationImages.station2 = remote.station2Img;
+      if (remote.station3Img !== undefined) SITE_CONFIG.stationImages.station3 = remote.station3Img;
+      if (remote.councilPhotoUrl !== undefined) SITE_CONFIG.councilPhotoUrl = remote.councilPhotoUrl;
+      if (remote.charterPdfUrl !== undefined) SITE_CONFIG.charterPdfUrl = remote.charterPdfUrl;
+      if (remote.wasteReductionPercent !== undefined) SITE_CONFIG.counters.wasteReductionPercent = Number(remote.wasteReductionPercent) || 0;
+      if (remote.reviewedDecisions !== undefined) SITE_CONFIG.counters.reviewedDecisions = Number(remote.reviewedDecisions) || 0;
+      if (remote.participatingClasses !== undefined) SITE_CONFIG.counters.participatingClasses = Number(remote.participatingClasses) || 0;
+      if (remote.cupsBefore !== undefined) SITE_CONFIG.beforeAfter.cups.beforeValue = Number(remote.cupsBefore) || 0;
+      if (remote.cupsAfter !== undefined) SITE_CONFIG.beforeAfter.cups.afterValue = Number(remote.cupsAfter) || 0;
+      if (remote.cupsNote !== undefined) SITE_CONFIG.beforeAfter.cups.note = remote.cupsNote;
+      if (remote.paperBefore !== undefined) SITE_CONFIG.beforeAfter.paper.beforeValue = Number(remote.paperBefore) || 0;
+      if (remote.paperAfter !== undefined) SITE_CONFIG.beforeAfter.paper.afterValue = Number(remote.paperAfter) || 0;
+      if (remote.paperNote !== undefined) SITE_CONFIG.beforeAfter.paper.note = remote.paperNote;
+
+      // النصوص الديناميكية من لوحة التحكم
+      if (remote.heroBadge) {
+        const el = document.querySelector(".hero-badge span:last-child");
+        if (el) el.textContent = remote.heroBadge;
+      }
+      if (remote.heroSubtitle) {
+        const el = document.querySelector(".hero-sub");
+        if (el) el.textContent = remote.heroSubtitle;
+      }
+      if (remote.studentName) {
+        const metaStudent = document.querySelector(".hero-meta span:first-child strong");
+        if (metaStudent) metaStudent.textContent = remote.studentName;
+        const footerStudent = document.querySelector(".site-footer div:first-child strong");
+        if (footerStudent) footerStudent.textContent = "الطالبة " + remote.studentName;
+      }
+      if (remote.videoTitle) {
+        const el = document.querySelector(".video-header h3");
+        if (el) el.textContent = "🎬 " + remote.videoTitle;
+      }
+      if (remote.videoDuration) {
+        const el = document.querySelector(".video-duration");
+        if (el) el.textContent = remote.videoDuration;
+      }
+      if (remote.councilQuote) {
+        const el = document.getElementById("councilQuote");
+        if (el) el.textContent = remote.councilQuote;
+      }
+      if (remote.closingQuote) {
+        const el = document.querySelector(".closing-quote");
+        if (el) el.textContent = remote.closingQuote;
+      }
+
+      // تحديث عناوين وأوصاف المحطات الثلاث
+      const stationCards = document.querySelectorAll(".station-card");
+      const stationTexts = [
+        { title: remote.station1Title, desc: remote.station1Desc },
+        { title: remote.station2Title, desc: remote.station2Desc },
+        { title: remote.station3Title, desc: remote.station3Desc }
+      ];
+      stationCards.forEach((card, idx) => {
+        const st = stationTexts[idx];
+        if (!st) return;
+        if (st.title) {
+          const h4 = card.querySelector(".station-body h4");
+          if (h4) h4.textContent = st.title;
+        }
+        if (st.desc) {
+          const p = card.querySelector(".station-body p");
+          if (p) p.textContent = st.desc;
+        }
+      });
+
       // 1. حقن الفيديو (YouTube أو MP4)
       const videoContainer = document.getElementById("videoContainer");
       if (SITE_CONFIG.videoUrl && videoContainer) {
@@ -2033,11 +2104,25 @@
       const cWaste = document.getElementById("counterWaste");
       const cDec = document.getElementById("counterDecisions");
       const cCls = document.getElementById("counterClasses");
-      if (cWaste) cWaste.dataset.target = SITE_CONFIG.counters.wasteReductionPercent;
-      if (cDec) cDec.dataset.target = SITE_CONFIG.counters.reviewedDecisions;
-      if (cCls) cCls.dataset.target = SITE_CONFIG.counters.participatingClasses;
+      if (cWaste) {
+        cWaste.dataset.target = SITE_CONFIG.counters.wasteReductionPercent;
+        if (cWaste.dataset.animated === "true") cWaste.textContent = SITE_CONFIG.counters.wasteReductionPercent + "%";
+      }
+      if (cDec) {
+        cDec.dataset.target = SITE_CONFIG.counters.reviewedDecisions;
+        if (cDec.dataset.animated === "true") cDec.textContent = SITE_CONFIG.counters.reviewedDecisions + "+";
+      }
+      if (cCls) {
+        cCls.dataset.target = SITE_CONFIG.counters.participatingClasses;
+        if (cCls.dataset.animated === "true") cCls.textContent = String(SITE_CONFIG.counters.participatingClasses);
+      }
 
-      // 5. ضبط زر تحميل الميثاق PDF
+      // 5. تحديث بطاقة قبل وبعد
+      if (typeof renderBeforeAfter === "function") {
+        renderBeforeAfter(activeBeforeAfterMetric);
+      }
+
+      // 6. ضبط زر تحميل الميثاق PDF
       const downloadBtn = document.getElementById("downloadCharterBtn");
       if (downloadBtn) {
         if (SITE_CONFIG.charterPdfUrl) {
@@ -2045,12 +2130,40 @@
           downloadBtn.target = "_blank";
           downloadBtn.rel = "noopener noreferrer";
           downloadBtn.setAttribute("download", "");
+          downloadBtn.onclick = null;
         } else {
-          downloadBtn.addEventListener("click", (e) => {
+          downloadBtn.href = "#";
+          downloadBtn.removeAttribute("download");
+          downloadBtn.onclick = (e) => {
             e.preventDefault();
             openCharterModal();
-          });
+          };
         }
+      }
+    }
+
+    // جلب الإعدادات المحفوظة من لوحة التحكم في Firestore تلقائيًا
+    (async function syncFromAdminDashboard() {
+      applyConfigToDOM({});
+      try {
+        const res = await fetch(
+          "https://firestore.googleapis.com/v1/projects/site-a8b88/databases/(default)/documents/schoolGuide/green_chair",
+          { cache: "no-store" }
+        );
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!json || !json.fields) return;
+        const parsed = {};
+        Object.keys(json.fields).forEach((key) => {
+          const valObj = json.fields[key];
+          if ("stringValue" in valObj) parsed[key] = valObj.stringValue;
+          else if ("integerValue" in valObj) parsed[key] = Number(valObj.integerValue);
+          else if ("doubleValue" in valObj) parsed[key] = Number(valObj.doubleValue);
+          else if ("booleanValue" in valObj) parsed[key] = Boolean(valObj.booleanValue);
+        });
+        applyConfigToDOM(parsed);
+      } catch (err) {
+        // fallback gracefully to local SITE_CONFIG
       }
     })();
 
@@ -2121,6 +2234,7 @@
         });
         tab.classList.add("active");
         tab.setAttribute("aria-selected", "true");
+        activeBeforeAfterMetric = tab.dataset.metric;
         renderBeforeAfter(tab.dataset.metric);
       });
     });

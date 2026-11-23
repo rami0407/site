@@ -39,6 +39,7 @@ import MiftaahSupervisionAdminTab from './MiftaahSupervisionAdminTab';
 import MafatihAdminTab from './MafatihAdminTab';
 import HolisticMappingPage from './HolisticMappingPage';
 import RavenExamTeacherDashboard from './RavenExamTeacherDashboard';
+import GreenChairAdminTab from './GreenChairAdminTab';
 import { broadcastSchoolNotification } from '../utils/notificationService';
 import { generateNewsArticleDraft, composeGratitudeMessage } from '../utils/aiService';
 import { generateBase32Secret, verifyTOTPCode, getOtpAuthUrl, getQrCodeUrl } from '../utils/totp';
@@ -5061,6 +5062,27 @@ const AdminDashboard = () => {
               📺 شاشات العرض الذكية (Kiosk Studio)
             </button>
 
+            {/* TOP ITEM: GREEN CHAIR INITIATIVE CONTROL TAB */}
+            <button
+              onClick={() => setActiveTab('green-chair-admin')}
+              className={`filter-chip ${activeTab === 'green-chair-admin' ? 'active' : ''}`}
+              style={{
+                width: '100%',
+                justifyContent: 'flex-start',
+                padding: '0.95rem 1.2rem',
+                fontSize: '1.05rem',
+                borderRadius: 'var(--radius-sm)',
+                background: activeTab === 'green-chair-admin' ? 'linear-gradient(135deg, #1B4332 0%, #2D6A4F 100%)' : '#ecfdf5',
+                color: activeTab === 'green-chair-admin' ? 'white' : '#1B4332',
+                fontWeight: 900,
+                border: '2px solid #6ee7b7',
+                boxShadow: '0 2px 6px rgba(27, 67, 50, 0.2)'
+              }}
+            >
+              <i className="fas fa-leaf" style={{ marginLeft: '0.85rem', width: '20px', fontSize: '1.15rem' }}></i>
+              🌿 مبادرة الكرسي الأخضر (البرلمان القطري)
+            </button>
+
             {/* TOP ITEM 3: WORLD IDEAS CONTROL TAB */}
             <button 
               onClick={() => {
@@ -9823,6 +9845,13 @@ const AdminDashboard = () => {
               {activeTab === 'family-challenge-admin' && (
                 <div>
                   <FamilyChallengeAdminTab />
+                </div>
+              )}
+
+              {/* تبويب: إدارة مبادرة الكرسي الأخضر */}
+              {activeTab === 'green-chair-admin' && (
+                <div>
+                  <GreenChairAdminTab />
                 </div>
               )}
 
