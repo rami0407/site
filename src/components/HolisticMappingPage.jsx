@@ -2728,6 +2728,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
             )}
 
             {!isAdminEmbed && (
+              <>
               <a
                 href="#/teacher-profile"
                 style={{
@@ -2777,6 +2778,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
               >
                 החלף משתמש / יציאה
               </button>
+              </>
             )}
           </div>
         </div>
