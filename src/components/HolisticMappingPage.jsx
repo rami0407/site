@@ -11,7 +11,8 @@ import {
   logoutTeacherSession,
   syncCustomTeachersList,
   updateTeacherPin,
-  DEFAULT_TEACHER_PIN
+  DEFAULT_TEACHER_PIN,
+  DEFAULT_CUSTOM_TEACHER_PINS
 } from '../utils/teacherAuth';
 import {
   setSecureStorage,
@@ -148,6 +149,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   const dirtyClassKeysRef = useRef(new Set());
   const cloudLoadedKeysRef = useRef(new Set());
   const cloudUpdatedMsRef = useRef({});
+  const configUpdatedMsRef = useRef(0);
 
   // Modals State
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
@@ -224,9 +226,13 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     return () => unsub();
   }, []);
 
-  // Helper to apply incoming cloud config
+  // Helper to apply incoming cloud config (timestamp-guarded so Coordinator Jihan's edits are never overwritten by stale docs)
   const applyIncomingCloudConfig = (data) => {
-    if (!data || typeof data !== 'object') return;
+    if (!data || typeof data !== 'object') return false;
+    const incomingMs = data.updatedMs || (data.updatedAt ? Date.parse(data.updatedAt) : 0) || 1;
+    if (incomingMs < configUpdatedMsRef.current) return false;
+    configUpdatedMsRef.current = incomingMs;
+
     if (data.academicYears) setAcademicYears(data.academicYears);
     if (data.holisticColumns) setHolisticColumns(data.holisticColumns);
     if (Array.isArray(data.gradeSubjects)) {
@@ -250,8 +256,15 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
       setCustomTeachers(data.customTeachers);
       syncCustomTeachersList(data.customTeachers);
     }
+    if (data.updatedBy) setLastUpdatedBy(data.updatedBy);
+    if (data.updatedAt) {
+      try {
+        setLastSavedAt(new Date(data.updatedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      } catch {}
+    }
     setSecureStorage('musherfe_holistic_config_v2', data);
     setCloudSyncStatus('synced');
+    return true;
   };
 
   // Load Schema & Permissions Config from Encrypted Storage + Firestore Cloud Database (Dual-Channel Live Sync)
@@ -300,7 +313,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
         )
       );
 
-      // Secondary channel in 'holistic_mapping_config' (auto-bridges to sharedConfRef if newer)
+      // Secondary channel in 'holistic_mapping_config' (auto-bridges to sharedConfRef ONLY if strictly newer)
       const legacyConfRef = doc(db, 'holistic_mapping_config', 'global_settings_v2');
       unsubs.push(
         onSnapshot(
@@ -308,8 +321,13 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
           (snap) => {
             if (snap.exists()) {
               const data = snap.data();
-              applyIncomingCloudConfig(data);
-              setDoc(sharedConfRef, data, { merge: true }).catch(() => {});
+              const incomingMs = data?.updatedMs || (data?.updatedAt ? Date.parse(data.updatedAt) : 0) || 0;
+              if (incomingMs > configUpdatedMsRef.current) {
+                const applied = applyIncomingCloudConfig(data);
+                if (applied) {
+                  setDoc(sharedConfRef, data, { merge: true }).catch(() => {});
+                }
+              }
             }
           },
           () => {}
@@ -641,6 +659,8 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   const saveGlobalConfig = async (updatedFields = {}) => {
     const nowIso = new Date().toISOString();
     const nowMs = Date.now();
+    const authorName = activeTeacher?.nameHe || activeTeacher?.nameAr || 'מנהל';
+    configUpdatedMsRef.current = nowMs;
     const nextConfig = {
       academicYears,
       selectedYear,
@@ -652,15 +672,16 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
       ...updatedFields,
       updatedAt: nowIso,
       updatedMs: nowMs,
-      updatedBy: activeTeacher?.nameAr || activeTeacher?.nameHe || 'מנהל'
+      updatedBy: authorName
     };
     setSecureStorage('musherfe_holistic_config_v2', nextConfig);
     setCloudSyncStatus('saving');
     try {
-      // Save to shared 'students' collection (open to all teachers & principal) AND legacy config collection
+      // Save to shared 'students' collection (open to all teachers, Coordinator Jihan & Principal) AND mirror to legacy config
       await setDoc(doc(db, 'students', 'holistic_cfg_global_v2'), nextConfig, { merge: true });
       setDoc(doc(db, 'holistic_mapping_config', 'global_settings_v2'), nextConfig, { merge: true }).catch(() => {});
       setCloudSyncStatus('synced');
+      setLastUpdatedBy(authorName);
       setLastSavedAt(new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     } catch (e) {
       console.warn('Cloud config save fallback to encrypted local vault:', e);
@@ -712,6 +733,32 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   };
 
   const autoSaveDebounceTimersRef = useRef({});
+  const pendingAutoSaveDataRef = useRef({});
+
+  // Flush any pending auto-save immediately if teacher switches tab or closes window
+  useEffect(() => {
+    const flushPending = () => {
+      Object.entries(pendingAutoSaveDataRef.current).forEach(([key, entry]) => {
+        if (autoSaveDebounceTimersRef.current[key]) {
+          clearTimeout(autoSaveDebounceTimersRef.current[key]);
+          delete autoSaveDebounceTimersRef.current[key];
+        }
+        delete pendingAutoSaveDataRef.current[key];
+        if (entry) {
+          pushClassToCloudNow(entry.classId, entry.students, entry.year);
+        }
+      });
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') flushPending();
+    };
+    window.addEventListener('beforeunload', flushPending);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      window.removeEventListener('beforeunload', flushPending);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
 
   const saveClassStudents = (classId, updatedStudents, yearToSave = selectedYear, forceImmediateCloud = false) => {
     const key = `${yearToSave}_${classId}`;
@@ -726,29 +773,27 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
         clearTimeout(autoSaveDebounceTimersRef.current[key]);
         delete autoSaveDebounceTimersRef.current[key];
       }
+      delete pendingAutoSaveDataRef.current[key];
       return pushClassToCloudNow(classId, updatedStudents, yearToSave);
     }
 
-    if (autoSaveEnabled) {
-      dirtyClassKeysRef.current.add(key);
-      setHasUnsavedChanges(true);
-      setCloudSyncStatus('saving');
+    // Automatic Cloud Save is ALWAYS active:
+    dirtyClassKeysRef.current.add(key);
+    pendingAutoSaveDataRef.current[key] = { classId, students: updatedStudents, year: yearToSave };
+    setHasUnsavedChanges(true);
+    setCloudSyncStatus('saving');
 
-      // Debounce network write by 350ms so rapid typing doesn't create request collisions,
-      // then immediately broadcasts to all other teachers via Firestore onSnapshot
-      if (autoSaveDebounceTimersRef.current[key]) {
-        clearTimeout(autoSaveDebounceTimersRef.current[key]);
-      }
-
-      autoSaveDebounceTimersRef.current[key] = setTimeout(async () => {
-        delete autoSaveDebounceTimersRef.current[key];
-        await pushClassToCloudNow(classId, updatedStudents, yearToSave);
-      }, 350);
-    } else {
-      dirtyClassKeysRef.current.add(key);
-      setHasUnsavedChanges(true);
-      setCloudSyncStatus('unsaved');
+    // Debounce network write by 250ms so rapid typing doesn't create request collisions,
+    // then immediately broadcasts to all other teachers, Coordinator Jihan & Principal via Firestore onSnapshot
+    if (autoSaveDebounceTimersRef.current[key]) {
+      clearTimeout(autoSaveDebounceTimersRef.current[key]);
     }
+
+    autoSaveDebounceTimersRef.current[key] = setTimeout(async () => {
+      delete autoSaveDebounceTimersRef.current[key];
+      delete pendingAutoSaveDataRef.current[key];
+      await pushClassToCloudNow(classId, updatedStudents, yearToSave);
+    }, 250);
   };
 
   // Explicit Manual Save Button Handler (שמירה ידנית / حفظ يدوي الآن)
@@ -1845,61 +1890,47 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     setLoginError('');
     const teacher = getTeacherById(selectedLoginTeacherId) || allTeachersList[0];
     if (!teacher) {
-      setLoginError('בחר שם מורה או מנהל מהרשימה.');
+      setLoginError('בחר שם מורה או מחנך/ת מהרשימה.');
       return;
     }
     const cleanPin = loginPinInput.trim();
     if (!cleanPin) {
-      setLoginError('נא להזין קוד סודי (PIN).');
+      setLoginError('נא להזין את הקוד האישי.');
       return;
     }
 
     const isPrincipalOrJihan = teacher.id === 'tch_36' || teacher.id === 'tch_2';
-    const chosenClassId = (!selectedLoginClassId || selectedLoginClassId === 'all_classes')
-      ? (isPrincipalOrJihan ? 'all_classes' : 'class_1_1')
-      : selectedLoginClassId;
+    const matchedClass = !isPrincipalOrJihan
+      ? SCHOOL_19_CLASSES.find((c) => (classPermissions[c.id]?.homeroomTeacherId || c.defaultHomeroomId) === teacher.id)
+      : null;
 
     setIsLoggingIn(true);
     try {
-      const isValid = await verifyTeacherCredentials(teacher.id, cleanPin);
-      const allowedPin =
-        isValid ||
-        cleanPin === DEFAULT_TEACHER_PIN ||
-        cleanPin === '318212' ||
-        (isPrincipalOrJihan && cleanPin === '061285227');
+      const assignedPersonalPin = DEFAULT_CUSTOM_TEACHER_PINS[teacher.id];
+      const matchesAssignedPin = assignedPersonalPin && cleanPin === String(assignedPersonalPin).trim();
+      const isValidCustomCloudPin = cleanPin !== DEFAULT_TEACHER_PIN && cleanPin !== '318212'
+        ? await verifyTeacherCredentials(teacher.id, cleanPin)
+        : false;
+      const allowedPin = matchesAssignedPin || isValidCustomCloudPin;
 
       if (allowedPin) {
         const sessionObj = {
           ...teacher,
           systemRole: teacher.id === 'tch_2' ? 'eval_coord' : (teacher.id === 'tch_36' ? 'principal' : 'homeroom_teacher'),
-          loginSelectedClassId: chosenClassId !== 'all_classes' ? chosenClassId : null
+          loginSelectedClassId: matchedClass ? matchedClass.id : null
         };
 
-        // If a homeroom teacher selected their class on the landing page, open that class immediately and bind it
-        if (chosenClassId && chosenClassId !== 'all_classes') {
-          const clsObj = SCHOOL_19_CLASSES.find((c) => c.id === chosenClassId);
-          setSelectedClassId(chosenClassId);
-          if (clsObj) setSelectedGradeLevel(clsObj.grade);
+        if (matchedClass) {
+          setSelectedClassId(matchedClass.id);
+          setSelectedGradeLevel(matchedClass.grade);
           setActiveMainTab('class-sheet');
-
-          if (!isPrincipalOrJihan) {
-            const updatedPerms = {
-              ...classPermissions,
-              [chosenClassId]: {
-                ...(classPermissions[chosenClassId] || { delegatedTeachers: [] }),
-                homeroomTeacherId: teacher.id
-              }
-            };
-            setClassPermissions(updatedPerms);
-            saveGlobalConfig({ classPermissions: updatedPerms });
-          }
         }
 
         setActiveTeacher(sessionObj);
         setActiveTeacherSession(sessionObj);
         setLoginPinInput('');
       } else {
-        setLoginError('❌ הקוד הסודי שגוי. הקוד ההתחלתי לכלל הצוות הוא 318212 (או הקוד האישי שבחרת במערכת).');
+        setLoginError('❌ הקוד האישי שגוי. נא לבדוק את הקוד האישי בן 9 הספרות ולהזין שוב.');
       }
     } finally {
       setIsLoggingIn(false);
@@ -2234,96 +2265,57 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
             </p>
           </div>
 
-          <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+          <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div>
-              <label style={{ display: 'block', fontWeight: 900, fontSize: '0.9rem', color: '#1e293b', marginBottom: '0.4rem' }}>
-                👩‍🏫 1. בחר שם המורה / המחנכת (اختر اسم المعلم/ة):
+              <label style={{ display: 'block', fontWeight: 900, fontSize: '0.95rem', color: '#1e293b', marginBottom: '0.45rem' }}>
+                👩‍🏫 שם המורה או המחנך/ת:
               </label>
               <select
                 value={selectedLoginTeacherId}
                 onChange={(e) => handleSelectLoginTeacher(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.85rem 1rem',
+                  padding: '0.9rem 1rem',
                   borderRadius: '14px',
                   border: '2px solid #cbd5e1',
                   fontWeight: 800,
-                  fontSize: '0.95rem',
-                  background: '#f8fafc'
+                  fontSize: '0.96rem',
+                  background: '#f8fafc',
+                  color: '#0f172a'
                 }}
               >
                 {allTeachersList.map((t) => (
                   <option key={t.id} value={t.id}>
-                    {t.nameHe} — {t.nameAr} ({t.role})
+                    {t.nameHe} — {t.nameAr}
                   </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontWeight: 900, fontSize: '0.9rem', color: '#1e293b', marginBottom: '0.4rem' }}>
-                🏫 2. בחר את הכיתה שבה את/ה מחנך/ת (اختر الصف الذي تربي فيه):
-              </label>
-              <select
-                value={selectedLoginClassId}
-                onChange={(e) => setSelectedLoginClassId(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.85rem 1rem',
-                  borderRadius: '14px',
-                  border: '2px solid #3b82f6',
-                  fontWeight: 900,
-                  fontSize: '0.95rem',
-                  background: '#eff6ff',
-                  color: '#1e3a8a'
-                }}
-              >
-                {(selectedLoginTeacherId === 'tch_36' || selectedLoginTeacherId === 'tch_2') && (
-                  <option value="all_classes">
-                    👑 כל 19 כיתות בית הספר — وصول شامل لكل الصفوف وتلخيص النتائج (المدير والمركزة)
-                  </option>
-                )}
-                {SCHOOL_19_CLASSES.map((cls) => {
-                  const hrId = classPermissions[cls.id]?.homeroomTeacherId || cls.defaultHomeroomId;
-                  const hrTeacher = getTeacherById(hrId);
-                  return (
-                    <option key={cls.id} value={cls.id}>
-                      כיתה {cls.nameHe} ({cls.nameAr}) — {hrTeacher ? hrTeacher.nameAr : ''}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.65rem 0.9rem', fontSize: '0.82rem', color: '#334155', fontWeight: 700, lineHeight: 1.55 }}>
-              🛡️ <strong>הרשאות מערכת (صلاحيات المنظومة):</strong> גישה לכל 19 הכיתות, סיכום כלל התוצאות, חילוץ מידע מכל הכיתות ועריכת עמודות שמורים למנהל ביה"ס (<strong>ראמי</strong>) ולרכזת המדידה (<strong>ג׳יהאן</strong>) בלבד. כל מחנך/ת נכנס/ת לכיתה שלו/ה בלבד.
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontWeight: 900, fontSize: '0.9rem', color: '#1e293b', marginBottom: '0.4rem' }}>
-                🔑 3. קוד סודי (الكود السري — حالياً للجميع: 318212):
+              <label style={{ display: 'block', fontWeight: 900, fontSize: '0.95rem', color: '#1e293b', marginBottom: '0.45rem' }}>
+                🔑 קוד אישי:
               </label>
               <input
                 type="password"
-                placeholder="הזן קוד סודי (ברירת מחדל לכולם: 318212)"
+                inputMode="numeric"
+                autoComplete="off"
                 value={loginPinInput}
                 onChange={(e) => setLoginPinInput(e.target.value)}
                 required
                 style={{
                   width: '100%',
-                  padding: '0.85rem 1rem',
+                  padding: '0.9rem 1rem',
                   borderRadius: '14px',
                   border: '2px solid #2563eb',
                   fontWeight: 900,
-                  fontSize: '1.1rem',
+                  fontSize: '1.15rem',
                   textAlign: 'center',
                   letterSpacing: '4px',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
+                  background: '#ffffff'
                 }}
               />
-              <div style={{ fontSize: '0.78rem', color: '#0369a1', fontWeight: 800, marginTop: '0.35rem', textAlign: 'center' }}>
-                💡 לאחר הכניסה עם <strong>318212</strong>, כל מורה יכול לבחור קוד סודי אישי משלו מתוך המערכת (بعد الدخول يمكنك اختيار كود خاص بك من داخل المنظومة).
-              </div>
             </div>
 
             {loginError && (
@@ -2360,6 +2352,20 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
             >
               {isLoggingIn ? 'מתחבר...' : '🚀 כניסה למערכת המיפוי ההוליסטי'}
             </button>
+
+            <div style={{ textAlign: 'center', marginTop: '0.25rem' }}>
+              <a
+                href="#/"
+                style={{
+                  color: '#64748b',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  textDecoration: 'none'
+                }}
+              >
+                ← חזרה לאתר בית הספר
+              </a>
+            </div>
           </form>
         </div>
       </div>
@@ -2484,39 +2490,24 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
               <span>{isSavingCloud ? 'جاري الحفظ...' : 'حفظ يدوي الآن (שמירה ידנית)'}</span>
             </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                const nextState = !autoSaveEnabled;
-                setAutoSaveEnabled(nextState);
-                if (nextState && hasUnsavedChanges) {
-                  handleManualSaveNow();
-                } else {
-                  triggerToast(
-                    nextState
-                      ? '⚡ تم تفعيل الحفظ التلقائي الفوري! كل تعديل يُحفظ ويظهر مباشرة.'
-                      : '✋ تم التحويل لوضع الحفظ اليدوي. اضغط "حفظ يدوي الآن" بعد الانتهاء من التعبئة.'
-                  );
-                }
-              }}
+            <div
               style={{
-                background: autoSaveEnabled ? 'rgba(59, 130, 246, 0.28)' : 'rgba(100, 116, 139, 0.35)',
+                background: 'rgba(59, 130, 246, 0.28)',
                 color: '#ffffff',
-                border: `1.5px solid ${autoSaveEnabled ? '#60a5fa' : '#94a3b8'}`,
-                padding: '0.5rem 0.85rem',
+                border: '1.5px solid #60a5fa',
+                padding: '0.5rem 0.9rem',
                 borderRadius: '12px',
                 fontWeight: 900,
-                cursor: 'pointer',
-                fontSize: '0.8rem',
+                fontSize: '0.82rem',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '0.35rem'
               }}
-              title="تبديل بين الحفظ التلقائي الفوري والحفظ اليدوي"
+              title="כל שינוי נשמר אוטומטית ומסונכרן בזמן אמת לכל המערכת"
             >
-              <span>{autoSaveEnabled ? '⚡' : '✋'}</span>
-              <span>{autoSaveEnabled ? 'حفظ تلقائي: مفعل' : 'حفظ تلقائي: متوقف'}</span>
-            </button>
+              <span>⚡</span>
+              <span>שמירה אוטומטית פעילה</span>
+            </div>
 
             <button
               type="button"

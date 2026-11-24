@@ -26,7 +26,8 @@ export const defaultSchoolTeachers = [
     "id": "tch_2",
     "nameHe": "אגבאריה ג'יהאן",
     "nameAr": "جيهان اغبارية",
-    "role": "معلمة ومربية صف",
+    "role": "مركزة القياس والتقييم ومربية صف",
+    "isCoordinator": true,
     "phone": "050-1234567",
     "email": "teacher2@musheirifa.edu.hl",
     "receptionSchedule": [

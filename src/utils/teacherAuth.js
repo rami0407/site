@@ -8,7 +8,42 @@ import { checkRateLimit, recordFailedAttempt, resetRateLimit, logSecurityEvent }
 export const DEFAULT_TEACHER_PIN = '318212';
 export const COORDINATOR_TEACHER_PIN = '031693872';
 export const DEFAULT_CUSTOM_TEACHER_PINS = {
-  tch_17: '031693872'
+  tch_1: '482917305',
+  tch_2: '061285227',
+  tch_3: '739104628',
+  tch_4: '516283940',
+  tch_5: '847392165',
+  tch_6: '295841703',
+  tch_7: '614729583',
+  tch_8: '938261475',
+  tch_9: '174958236',
+  tch_10: '562049187',
+  tch_11: '803617492',
+  tch_12: '349182650',
+  tch_13: '725409813',
+  tch_14: '491836275',
+  tch_15: '658274910',
+  tch_16: '217593846',
+  tch_17: '031693872',
+  tch_18: '904728351',
+  tch_19: '386154927',
+  tch_20: '547920618',
+  tch_21: '819365472',
+  tch_22: '263847195',
+  tch_23: '741608529',
+  tch_24: '458291736',
+  tch_25: '692473815',
+  tch_26: '135829467',
+  tch_27: '874196230',
+  tch_28: '329651847',
+  tch_29: '583914726',
+  tch_30: '916482375',
+  tch_31: '407265891',
+  tch_32: '671538249',
+  tch_33: '248917635',
+  tch_34: '795340182',
+  tch_35: '362789415',
+  tch_36: '951846273'
 };
 const STORAGE_PREFIX = 'musherfe_tch_pin_';
 const ACTIVE_TEACHER_KEY = 'musherfe_active_teacher_session';

@@ -362,6 +362,26 @@ const Navbar = () => {
             </li>
 
             <li>
+              <a
+                href="#/holistic-mapping"
+                className="top-admin-link"
+                title="מערכת המיפוי ההוליסטי למורים"
+                style={{
+                  background: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)',
+                  color: '#ffffff',
+                  padding: '4px 12px',
+                  borderRadius: '20px',
+                  fontWeight: 900,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px'
+                }}
+              >
+                <i className="fas fa-chart-pie"></i> מיפוי הוליסטי (למורים)
+              </a>
+            </li>
+
+            <li>
               <a href="#/admin" className="top-admin-link" title="بوابة الإدارة">
                 <i className="fas fa-user-shield"></i> لوحة التحكم
               </a>
@@ -515,6 +535,11 @@ const Navbar = () => {
                 <li>
                   <a href="#/guard" onClick={() => setMobileMenuOpen(false)} style={{ color: '#34d399', fontWeight: 800 }}>
                     <i className="fas fa-shield-alt"></i> بوابة الحارس والأمن 🛡️
+                  </a>
+                </li>
+                <li>
+                  <a href="#/holistic-mapping" onClick={() => setMobileMenuOpen(false)} style={{ color: '#60a5fa', fontWeight: 900 }}>
+                    <i className="fas fa-chart-pie"></i> מיפוי הוליסטי (כניסת מורים) 📊
                   </a>
                 </li>
                 <li>
