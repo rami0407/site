@@ -69,10 +69,9 @@ export const normalizeHolisticValue = (rawVal) => {
 
 const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   // ==================== 1. AUTHENTICATION & ROLE STATE ====================
-  const [activeTeacher, setActiveTeacher] = useState(() => {
-    const s = getActiveTeacherSession();
-    return s && s.id ? s : null;
-  });
+  // When opened from the school website (not embedded inside AdminDashboard),
+  // ALWAYS start on the 2-field landing page (Teacher Name + Personal Code).
+  const [activeTeacher, setActiveTeacher] = useState(null);
   const [isFirebaseAdmin, setIsFirebaseAdmin] = useState(false);
 
   // Dynamic Teachers Directory (Default + Custom Teachers added by Principal)
@@ -209,6 +208,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
 
   // ==================== 5. MONITOR FIREBASE AUTH & CONFIG ====================
   useEffect(() => {
+    if (!isAdminEmbed) return;
     const unsub = onAuthStateChanged(auth, (u) => {
       if (u && u.email) {
         setIsFirebaseAdmin(true);
@@ -224,7 +224,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
       }
     });
     return () => unsub();
-  }, []);
+  }, [isAdminEmbed]);
 
   // Helper to apply incoming cloud config (timestamp-guarded so Coordinator Jihan's edits are never overwritten by stale docs)
   const applyIncomingCloudConfig = (data) => {
@@ -2201,7 +2201,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   };
 
   // ==================== 14. RENDER LOGIN SCREEN IF NOT LOGGED IN ====================
-  if (!activeTeacher && !isAdminEmbed && !isFirebaseAdmin) {
+  if (!activeTeacher && !isAdminEmbed) {
     return (
       <div
         style={{
