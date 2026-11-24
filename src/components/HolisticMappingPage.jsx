@@ -43,6 +43,29 @@ import './HolisticMappingPage.css';
 
 const INITIAL_TEACHERS = getAllTeachers();
 
+// Universal Helper to parse single or multiple holistic answers safely
+export const normalizeHolisticValue = (rawVal) => {
+  if (!rawVal) return [];
+  if (Array.isArray(rawVal)) {
+    return rawVal.filter((v) => typeof v === 'string' && v.trim().length > 0 && v.trim() !== '—' && v.trim() !== 'לא הוזן');
+  }
+  if (typeof rawVal === 'string') {
+    const trimmed = rawVal.trim();
+    if (!trimmed || trimmed === '—' || trimmed === 'לא הוזן') return [];
+    if (trimmed.includes(' • ')) {
+      return trimmed.split(' • ').map((s) => s.trim()).filter((s) => s && s !== '—' && s !== 'לא הוזן');
+    }
+    if (trimmed.includes('; ')) {
+      return trimmed.split('; ').map((s) => s.trim()).filter((s) => s && s !== '—' && s !== 'לא הוזן');
+    }
+    if (trimmed.includes('\n')) {
+      return trimmed.split('\n').map((s) => s.trim()).filter((s) => s && s !== '—' && s !== 'לא הוזן');
+    }
+    return [trimmed];
+  }
+  return [];
+};
+
 const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   // ==================== 1. AUTHENTICATION & ROLE STATE ====================
   const [activeTeacher, setActiveTeacher] = useState(() => {
@@ -153,6 +176,11 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   const [editingColForOptions, setEditingColForOptions] = useState(null);
   const [newOptionLabel, setNewOptionLabel] = useState('');
   const [newOptionColor, setNewOptionColor] = useState('green');
+
+  // Multi-Selection Dropdown Popover State (לבחירת יותר מאפשרות אחת בעת המיפוי)
+  const [activeMultiSelect, setActiveMultiSelect] = useState(null);
+  const [multiSelectSearch, setMultiSelectSearch] = useState('');
+  const [multiSelectCustomInput, setMultiSelectCustomInput] = useState('');
 
   const [newSubjTitleHe, setNewSubjTitleHe] = useState('');
   const [newSubjTitleAr, setNewSubjTitleAr] = useState('');
@@ -1360,10 +1388,20 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
       SCHOOL_19_CLASSES.forEach((cls) => {
         const key = `${selectedYear}_${cls.id}`;
         const stus = classStudentsMap[key] || [];
-        if (stus.some((s) => s[colId] === oldValToReplace)) {
-          const updatedStus = stus.map((s) =>
-            s[colId] === oldValToReplace ? { ...s, [colId]: cleanLabel } : s
-          );
+        const hasMatch = stus.some((s) => {
+          const v = s[colId];
+          return Array.isArray(v) ? v.includes(oldValToReplace) : v === oldValToReplace;
+        });
+        if (hasMatch) {
+          const updatedStus = stus.map((s) => {
+            const v = s[colId];
+            if (Array.isArray(v)) {
+              return v.includes(oldValToReplace)
+                ? { ...s, [colId]: v.map((item) => (item === oldValToReplace ? cleanLabel : item)) }
+                : s;
+            }
+            return s[colId] === oldValToReplace ? { ...s, [colId]: cleanLabel } : s;
+          });
           saveClassStudents(cls.id, updatedStus);
         }
       });
@@ -1742,8 +1780,14 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     holisticColumns.forEach((col) => {
       const counts = {};
       allStudents.forEach((stu) => {
-        const val = stu[col.id] || 'לא הוזן';
-        counts[val] = (counts[val] || 0) + 1;
+        const valList = normalizeHolisticValue(stu[col.id]);
+        if (valList.length === 0) {
+          counts['לא הוזן'] = (counts['לא הוזן'] || 0) + 1;
+        } else {
+          valList.forEach((v) => {
+            counts[v] = (counts[v] || 0) + 1;
+          });
+        }
       });
       fieldBreakdown[col.id] = counts;
     });
@@ -1909,10 +1953,12 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     triggerToast('📥 קובץ אקסל מאוחד של כל 19 הכיתות (469 תלמידים) הופק והורד בהצלחה!');
   };
 
-  // Helper to get pill style for a dropdown value
+  // Helper to get pill style for a dropdown value (supports single string or array)
   const getPillStyleForValue = (col, val) => {
     if (!val) return OPTION_PILL_COLORS.gray;
-    const matchedOpt = (col.options || []).find((o) => o.value === val);
+    const targetVal = Array.isArray(val) ? val[0] : val;
+    if (!targetVal) return OPTION_PILL_COLORS.gray;
+    const matchedOpt = (col?.options || []).find((o) => o.value === targetVal || o.labelHe === targetVal);
     const colorKey = matchedOpt?.color || 'gray';
     return OPTION_PILL_COLORS[colorKey] || OPTION_PILL_COLORS.gray;
   };
@@ -3120,7 +3166,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                       {holisticColumns.map((col) => (
                         <th key={`sub_${col.id}`}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', flexWrap: 'wrap' }}>
-                            <span>בחירה מתוך רשימה</span>
+                            <span>בחירה (אפשרות אחת או יותר)</span>
                             {userCapabilities.canManageSchema && (
                               <button
                                 type="button"
@@ -3210,64 +3256,108 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                             </div>
                           </td>
 
-                          {/* Holistic Dropdown Pill Cells */}
+                          {/* Holistic Multi-Selection Pill Cells */}
                           {holisticColumns.map((col) => {
-                            const currentVal = stu[col.id] || '';
-                            const pillStyle = getPillStyleForValue(col, currentVal);
-                            const optionsList = col.options || [];
+                            const currentVal = stu[col.id];
+                            const selectedValues = normalizeHolisticValue(currentVal);
+                            const isOpen = activeMultiSelect?.studentId === stu.id && activeMultiSelect?.colId === col.id;
+                            const pillStyle = getPillStyleForValue(col, selectedValues);
 
                             return (
-                              <td key={`${stu.id}_${col.id}`}>
-                                <select
-                                  className="holistic-pill-select"
-                                  value={currentVal}
+                              <td key={`${stu.id}_${col.id}`} style={{ position: 'relative' }}>
+                                <button
+                                  type="button"
+                                  className={`holistic-pill-select ${selectedValues.length === 0 ? 'is-empty' : ''}`}
                                   disabled={!currentClassAccess.canEditMapping}
-                                  onChange={(e) => {
-                                    if (e.target.value === '__MANAGE_OPTIONS__') {
-                                      setEditingColForOptions(col);
-                                      return;
-                                    }
-                                    if (e.target.value === '__CUSTOM__') {
-                                      const customText = window.prompt(`הזן ערך מותאם אישית עבור "${col.titleHe}":`, currentVal);
-                                      if (customText !== null) {
-                                        handleUpdateStudentField(stu.id, col.id, customText.trim());
-                                      }
+                                  onClick={(e) => {
+                                    if (!currentClassAccess.canEditMapping) return;
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    if (isOpen) {
+                                      setActiveMultiSelect(null);
                                     } else {
-                                      handleUpdateStudentField(stu.id, col.id, e.target.value);
+                                      setMultiSelectSearch('');
+                                      setActiveMultiSelect({
+                                        studentId: stu.id,
+                                        studentName: stu.studentName,
+                                        colId: col.id,
+                                        col,
+                                        anchorRect: rect
+                                      });
                                     }
                                   }}
+                                  title={selectedValues.length > 0 ? selectedValues.join(' • ') : 'לחץ לבחירת מענה אחד או יותר'}
                                   style={{
-                                    backgroundColor: pillStyle.bg,
-                                    color: pillStyle.text,
-                                    borderColor: pillStyle.border
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    gap: '6px',
+                                    width: '100%',
+                                    minWidth: '145px',
+                                    maxWidth: '220px',
+                                    padding: '0.36rem 0.75rem',
+                                    borderRadius: '999px',
+                                    fontWeight: 800,
+                                    fontSize: '0.82rem',
+                                    cursor: currentClassAccess.canEditMapping ? 'pointer' : 'not-allowed',
+                                    border: selectedValues.length === 1
+                                      ? `1.5px solid ${pillStyle.border}`
+                                      : selectedValues.length > 1
+                                      ? '1.5px solid #2563eb'
+                                      : '1.5px solid #cbd5e1',
+                                    background: selectedValues.length === 1
+                                      ? pillStyle.bg
+                                      : selectedValues.length > 1
+                                      ? '#eff6ff'
+                                      : '#ffffff',
+                                    color: selectedValues.length === 1
+                                      ? pillStyle.text
+                                      : selectedValues.length > 1
+                                      ? '#1e40af'
+                                      : '#64748b',
+                                    textAlign: 'right',
+                                    transition: 'all 0.15s ease',
+                                    boxShadow: isOpen ? '0 0 0 3px rgba(37, 99, 235, 0.3)' : 'none',
+                                    fontFamily: 'inherit'
                                   }}
                                 >
-                                  <option value="">— בחר מענה —</option>
-                                  {optionsList.map((opt) => (
-                                    <option
-                                      key={opt.value}
-                                      value={opt.value}
-                                      style={{ background: '#ffffff', color: '#0f172a', fontWeight: 700 }}
-                                    >
-                                      {opt.labelHe}
-                                    </option>
-                                  ))}
-                                  {currentVal && !optionsList.some((o) => o.value === currentVal) && (
-                                    <option value={currentVal} style={{ background: '#ffffff', color: '#0f172a' }}>
-                                      {currentVal}
-                                    </option>
-                                  )}
-                                  {userCapabilities.canManageSchema && (
-                                    <>
-                                      <option value="__CUSTOM__" style={{ background: '#f8fafc', color: '#2563eb', fontWeight: 900 }}>
-                                        ✍️ הקלד הערה / ערך חופשי...
-                                      </option>
-                                      <option value="__MANAGE_OPTIONS__" style={{ background: '#fef3c7', color: '#92400e', fontWeight: 900 }}>
-                                        ⚙️ הוספה / עריכה / החלפה של אפשרויות מענה לשדה זה...
-                                      </option>
-                                    </>
-                                  )}
-                                </select>
+                                  <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                    flex: 1
+                                  }}>
+                                    {selectedValues.length === 0 && (
+                                      <span style={{ color: '#94a3b8' }}>— בחר מענה —</span>
+                                    )}
+                                    {selectedValues.length === 1 && (
+                                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        {selectedValues[0]}
+                                      </span>
+                                    )}
+                                    {selectedValues.length > 1 && (
+                                      <>
+                                        <span style={{
+                                          background: '#2563eb',
+                                          color: '#ffffff',
+                                          borderRadius: '999px',
+                                          padding: '1px 6px',
+                                          fontSize: '0.72rem',
+                                          fontWeight: 900,
+                                          flexShrink: 0
+                                        }}>
+                                          {selectedValues.length}
+                                        </span>
+                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                          {selectedValues[0]}
+                                        </span>
+                                      </>
+                                    )}
+                                  </div>
+                                  <span style={{ fontSize: '0.74rem', opacity: 0.8, marginRight: '2px', color: '#64748b' }}>▾</span>
+                                </button>
                               </td>
                             );
                           })}
@@ -4060,24 +4150,35 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                           </td>
                           {['health_status', 'family_status', 'social_status', 'special_needs', 'attendance_status'].map((cid) => {
                             const colObj = holisticColumns.find((c) => c.id === cid) || { options: [] };
-                            const val = stu[cid] || '—';
-                            const pill = getPillStyleForValue(colObj, stu[cid]);
+                            const valList = normalizeHolisticValue(stu[cid]);
                             return (
                               <td key={cid}>
-                                <span
-                                  style={{
-                                    display: 'inline-block',
-                                    background: pill.bg,
-                                    color: pill.text,
-                                    border: `1px solid ${pill.border}`,
-                                    padding: '0.2rem 0.55rem',
-                                    borderRadius: '999px',
-                                    fontSize: '0.78rem',
-                                    fontWeight: 800
-                                  }}
-                                >
-                                  {val}
-                                </span>
+                                {valList.length > 0 ? (
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px', justifyContent: 'center' }}>
+                                    {valList.map((v) => {
+                                      const pill = getPillStyleForValue(colObj, v);
+                                      return (
+                                        <span
+                                          key={v}
+                                          style={{
+                                            display: 'inline-block',
+                                            background: pill.bg,
+                                            color: pill.text,
+                                            border: `1px solid ${pill.border}`,
+                                            padding: '0.15rem 0.5rem',
+                                            borderRadius: '999px',
+                                            fontSize: '0.74rem',
+                                            fontWeight: 800
+                                          }}
+                                        >
+                                          {v}
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                ) : (
+                                  <span style={{ color: '#94a3b8' }}>—</span>
+                                )}
                               </td>
                             );
                           })}
@@ -4169,8 +4270,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
                     {holisticColumns.map((col) => {
-                      const val = selectedStudentForCard[col.id] || 'לא הוזן';
-                      const pill = getPillStyleForValue(col, selectedStudentForCard[col.id]);
+                      const valList = normalizeHolisticValue(selectedStudentForCard[col.id]);
                       return (
                         <div
                           key={col.id}
@@ -4181,23 +4281,35 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                             border: '1px solid #e2e8f0'
                           }}
                         >
-                          <div style={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 800, marginBottom: '0.3rem' }}>
+                          <div style={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 800, marginBottom: '0.35rem' }}>
                             {col.titleHe} ({col.titleAr || ''})
                           </div>
-                          <span
-                            style={{
-                              display: 'inline-block',
-                              background: pill.bg,
-                              color: pill.text,
-                              border: `1px solid ${pill.border}`,
-                              padding: '0.25rem 0.65rem',
-                              borderRadius: '999px',
-                              fontWeight: 900,
-                              fontSize: '0.82rem'
-                            }}
-                          >
-                            {val}
-                          </span>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                            {valList.length > 0 ? (
+                              valList.map((v) => {
+                                const pill = getPillStyleForValue(col, v);
+                                return (
+                                  <span
+                                    key={v}
+                                    style={{
+                                      display: 'inline-block',
+                                      background: pill.bg,
+                                      color: pill.text,
+                                      border: `1px solid ${pill.border}`,
+                                      padding: '0.2rem 0.6rem',
+                                      borderRadius: '999px',
+                                      fontWeight: 800,
+                                      fontSize: '0.8rem'
+                                    }}
+                                  >
+                                    {v}
+                                  </span>
+                                );
+                              })
+                            ) : (
+                              <span style={{ color: '#94a3b8', fontSize: '0.8rem', fontStyle: 'italic' }}>לא הוזן</span>
+                            )}
+                          </div>
                         </div>
                       );
                     })}
@@ -5615,6 +5727,428 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
           </div>
         )}
       </div>
+
+      {/* ===================================================================== */}
+      {/* POPOVER / MODAL: MULTI-SELECTION FOR HOLISTIC CRITERIA (בחירה מרובה) */}
+      {/* ===================================================================== */}
+      {activeMultiSelect && (() => {
+        const targetStu = currentStudents.find((s) => s.id === activeMultiSelect.studentId);
+        const targetCol = holisticColumns.find((c) => c.id === activeMultiSelect.colId) || activeMultiSelect.col;
+        if (!targetStu || !targetCol) return null;
+
+        const selectedValues = normalizeHolisticValue(targetStu[targetCol.id]);
+        const allOptions = targetCol.options || [];
+
+        // Identify any custom values currently on the student that aren't in the schema options
+        const customValuesOnStudent = selectedValues.filter(
+          (val) => !allOptions.some((o) => (o.value === val || o.labelHe === val))
+        );
+
+        const filteredOptions = allOptions.filter((opt) => {
+          if (!multiSelectSearch.trim()) return true;
+          const search = multiSelectSearch.trim().toLowerCase();
+          return (opt.labelHe || opt.value || '').toLowerCase().includes(search);
+        });
+
+        const toggleOption = (val) => {
+          let next;
+          if (selectedValues.includes(val)) {
+            next = selectedValues.filter((v) => v !== val);
+          } else {
+            next = [...selectedValues, val];
+          }
+          handleUpdateStudentField(targetStu.id, targetCol.id, next);
+        };
+
+        const handleClearAll = () => {
+          handleUpdateStudentField(targetStu.id, targetCol.id, []);
+        };
+
+        const handleAddCustomValue = (e) => {
+          if (e) e.preventDefault();
+          const clean = (multiSelectCustomInput || '').trim();
+          if (!clean) return;
+          if (!selectedValues.includes(clean)) {
+            handleUpdateStudentField(targetStu.id, targetCol.id, [...selectedValues, clean]);
+          }
+          setMultiSelectCustomInput('');
+        };
+
+        return (
+          <div
+            className="holistic-modal-backdrop"
+            style={{ zIndex: 10050 }}
+            onClick={() => setActiveMultiSelect(null)}
+          >
+            <div
+              className="holistic-modal-box"
+              style={{
+                maxWidth: '560px',
+                width: '95%',
+                maxHeight: '90vh',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+                padding: '1.25rem',
+                borderRadius: '20px',
+                boxShadow: '0 25px 60px -15px rgba(15, 23, 42, 0.4), 0 0 0 1px rgba(0,0,0,0.06)'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.85rem' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'inline-block', fontSize: '0.72rem', background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: '6px', fontWeight: 800, marginBottom: '4px' }}>
+                    {targetCol.groupHe || 'מיפוי הוליסטי'}
+                  </div>
+                  <h3 style={{ margin: 0, fontSize: '1.18rem', fontWeight: 900, color: '#0f172a' }}>
+                    {targetCol.titleHe}
+                  </h3>
+                  <div style={{ fontSize: '0.86rem', color: '#475569', fontWeight: 700, marginTop: '2px' }}>
+                    תלמיד/ה: <strong style={{ color: '#0f172a' }}>{targetStu.studentName}</strong>
+                    {targetStu.gender && <span> • {targetStu.gender}</span>}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveMultiSelect(null)}
+                  style={{
+                    background: '#f1f5f9',
+                    border: 'none',
+                    borderRadius: '10px',
+                    width: '36px',
+                    height: '36px',
+                    cursor: 'pointer',
+                    fontSize: '1.1rem',
+                    color: '#64748b',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 'bold',
+                    transition: 'all 0.15s ease'
+                  }}
+                  title="סגור (Esc)"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Helper & Selection Counter Bar */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', padding: '0.6rem 0.85rem', borderRadius: '10px', margin: '0.75rem 0', border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: '0.82rem', color: '#1e293b', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>סומנו:</span>
+                  <span style={{
+                    background: selectedValues.length > 0 ? '#2563eb' : '#cbd5e1',
+                    color: '#ffffff',
+                    borderRadius: '999px',
+                    padding: '1px 8px',
+                    fontSize: '0.78rem',
+                    fontWeight: 900
+                  }}>
+                    {selectedValues.length}
+                  </span>
+                  <span style={{ fontSize: '0.74rem', color: '#64748b' }}>(ניתן לסמן מספר אפשרויות)</span>
+                </div>
+                {selectedValues.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearAll}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#dc2626',
+                      fontSize: '0.78rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      padding: '2px 6px',
+                      borderRadius: '6px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '3px'
+                    }}
+                    title="נקה את כל הבחירות לשדה זה"
+                  >
+                    🗑️ נקה הכל
+                  </button>
+                )}
+              </div>
+
+              {/* Search filter if there are many options */}
+              {allOptions.length > 5 && (
+                <div style={{ marginBottom: '0.6rem' }}>
+                  <input
+                    type="text"
+                    value={multiSelectSearch}
+                    onChange={(e) => setMultiSelectSearch(e.target.value)}
+                    placeholder="🔍 חפש אפשרות..."
+                    style={{
+                      width: '100%',
+                      padding: '0.45rem 0.75rem',
+                      borderRadius: '8px',
+                      border: '1.5px solid #cbd5e1',
+                      fontSize: '0.84rem',
+                      fontFamily: 'inherit',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Scrollable list of predefined options */}
+              <div
+                style={{
+                  flex: 1,
+                  overflowY: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.45rem',
+                  maxHeight: '340px',
+                  paddingLeft: '4px',
+                  paddingRight: '2px'
+                }}
+              >
+                {filteredOptions.length === 0 && (
+                  <div style={{ textAlign: 'center', color: '#94a3b8', padding: '1.5rem', fontSize: '0.85rem' }}>
+                    לא נמצאו אפשרויות תואמות לחיפוש
+                  </div>
+                )}
+
+                {filteredOptions.map((opt, idx) => {
+                  const val = opt.value || opt.labelHe;
+                  const isChecked = selectedValues.includes(val);
+                  const pill = OPTION_PILL_COLORS[opt.color] || OPTION_PILL_COLORS.blue;
+
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => toggleOption(val)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '0.55rem 0.85rem',
+                        borderRadius: '12px',
+                        border: isChecked ? `2px solid ${pill.border || '#2563eb'}` : '1.5px solid #e2e8f0',
+                        background: isChecked ? (pill.bg || '#eff6ff') : '#ffffff',
+                        cursor: 'pointer',
+                        transition: 'all 0.12s ease',
+                        boxShadow: isChecked ? '0 2px 6px rgba(0, 0, 0, 0.05)' : 'none'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                        <div
+                          style={{
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '6px',
+                            border: isChecked ? '2px solid #2563eb' : '2px solid #cbd5e1',
+                            background: isChecked ? '#2563eb' : '#ffffff',
+                            color: '#ffffff',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '0.78rem',
+                            fontWeight: 900,
+                            flexShrink: 0
+                          }}
+                        >
+                          {isChecked ? '✓' : ''}
+                        </div>
+                        <span
+                          style={{
+                            fontWeight: isChecked ? 900 : 700,
+                            color: isChecked ? (pill.text || '#0f172a') : '#1e293b',
+                            fontSize: '0.88rem'
+                          }}
+                        >
+                          {opt.labelHe || opt.value}
+                        </span>
+                      </div>
+                      <span
+                        style={{
+                          width: '10px',
+                          height: '10px',
+                          borderRadius: '50%',
+                          background: pill.border || '#94a3b8',
+                          flexShrink: 0
+                        }}
+                      />
+                    </div>
+                  );
+                })}
+
+                {/* Custom values on student (e.g. from previous free-text entries) */}
+                {customValuesOnStudent.length > 0 && (
+                  <div style={{ marginTop: '0.65rem', paddingTop: '0.65rem', borderTop: '1px dashed #cbd5e1' }}>
+                    <div style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 800, marginBottom: '0.4rem' }}>
+                      ✍️ ערכים מותאמים אישית של התלמיד/ה:
+                    </div>
+                    {customValuesOnStudent.map((cVal, cIdx) => (
+                      <div
+                        key={`custom_${cIdx}`}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '0.45rem 0.75rem',
+                          borderRadius: '10px',
+                          border: '1.5px solid #e0e7ff',
+                          background: '#f5f3ff',
+                          marginBottom: '0.35rem'
+                        }}
+                      >
+                        <div
+                          onClick={() => toggleOption(cVal)}
+                          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', flex: 1 }}
+                        >
+                          <div
+                            style={{
+                              width: '18px',
+                              height: '18px',
+                              borderRadius: '5px',
+                              border: '2px solid #6366f1',
+                              background: '#6366f1',
+                              color: '#ffffff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.72rem',
+                              fontWeight: 900
+                            }}
+                          >
+                            ✓
+                          </div>
+                          <span style={{ fontWeight: 800, color: '#4338ca', fontSize: '0.84rem' }}>
+                            {cVal}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => toggleOption(cVal)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#94a3b8',
+                            cursor: 'pointer',
+                            fontSize: '0.85rem',
+                            padding: '2px 6px'
+                          }}
+                          title="הסר ערך זה"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Free-text custom entry form */}
+              <form
+                onSubmit={handleAddCustomValue}
+                style={{
+                  display: 'flex',
+                  gap: '0.4rem',
+                  marginTop: '0.85rem',
+                  paddingTop: '0.75rem',
+                  borderTop: '1px solid #e2e8f0'
+                }}
+              >
+                <input
+                  type="text"
+                  value={multiSelectCustomInput}
+                  onChange={(e) => setMultiSelectCustomInput(e.target.value)}
+                  placeholder="✍️ הוסף מענה מותאם אישית / טקסט חופשי..."
+                  style={{
+                    flex: 1,
+                    padding: '0.45rem 0.75rem',
+                    borderRadius: '8px',
+                    border: '1.5px solid #cbd5e1',
+                    fontSize: '0.82rem',
+                    fontFamily: 'inherit',
+                    outline: 'none'
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={!multiSelectCustomInput.trim()}
+                  style={{
+                    background: multiSelectCustomInput.trim() ? '#4f46e5' : '#94a3b8',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '0.45rem 0.9rem',
+                    fontWeight: 800,
+                    fontSize: '0.82rem',
+                    cursor: multiSelectCustomInput.trim() ? 'pointer' : 'not-allowed',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  + הוסף
+                </button>
+              </form>
+
+              {/* Footer actions */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '0.5rem',
+                  marginTop: '0.85rem',
+                  paddingTop: '0.75rem',
+                  borderTop: '1px solid #e2e8f0'
+                }}
+              >
+                {userCapabilities.canManageSchema ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const colToEdit = targetCol;
+                      setActiveMultiSelect(null);
+                      setEditingColForOptions(colToEdit);
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#475569',
+                      fontSize: '0.76rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: 0
+                    }}
+                  >
+                    ⚙️ עריכת אפשרויות קבועות
+                  </button>
+                ) : <span />}
+
+                <button
+                  type="button"
+                  onClick={() => setActiveMultiSelect(null)}
+                  style={{
+                    background: '#059669',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '10px',
+                    padding: '0.6rem 1.6rem',
+                    fontWeight: 900,
+                    fontSize: '0.9rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  ✓ סיום ושמירה
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ===================================================================== */}
       {/* MODAL: FULL CONTROL OVER FIELD & ANSWER OPTIONS (إضافة/تعديل/تبديل/مسح) */}

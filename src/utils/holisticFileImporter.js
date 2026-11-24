@@ -587,7 +587,10 @@ export const exportClassToExcelWorkbook = ({
     : students.map((stu) => [
         stu.studentName || '',
         stu.idNumber || '',
-        ...holisticColumns.map((c) => stu[c.id] || ''),
+        ...holisticColumns.map((c) => {
+          const val = stu[c.id];
+          return Array.isArray(val) ? val.join(' • ') : (val || '');
+        }),
         ...gradeSubjects.map((s) => stu?.grades?.[periodId]?.[s.id] ?? '')
       ]);
 
@@ -653,7 +656,10 @@ export const exportAllClassesToExcelWorkbook = ({
         stu.studentName || '',
         stu.idNumber || '',
         stu.gender || '',
-        ...holisticColumns.map((c) => stu[c.id] || ''),
+        ...holisticColumns.map((c) => {
+          const val = stu[c.id];
+          return Array.isArray(val) ? val.join(' • ') : (val || '');
+        }),
         ...gradeSubjects.map((s) => stu?.grades?.[periodId]?.[s.id] ?? ''),
         avg
       ]);
@@ -684,7 +690,10 @@ export const exportAllClassesToExcelWorkbook = ({
       stu.studentName || '',
       stu.idNumber || '',
       stu.gender || '',
-      ...holisticColumns.map((c) => stu[c.id] || ''),
+      ...holisticColumns.map((c) => {
+        const val = stu[c.id];
+        return Array.isArray(val) ? val.join(' • ') : (val || '');
+      }),
       ...gradeSubjects.map((s) => stu?.grades?.[periodId]?.[s.id] ?? '')
     ]);
     const ws = XLSX.utils.aoa_to_sheet([topHeaders, subHeaders, ...rows]);

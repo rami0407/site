@@ -294,6 +294,12 @@
   font-family: inherit;
 }
 
+.holistic-pill-select:hover:not(:disabled) {
+  border-color: #2563eb !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
+  transform: translateY(-1px);
+}
+
 .holistic-pill-select:focus {
   outline: none;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
