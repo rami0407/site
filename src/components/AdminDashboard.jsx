@@ -343,19 +343,7 @@ const AdminDashboard = () => {
           };
         }
       }
-      const savedCoord = localStorage.getItem('musherfe_coordinator_session');
-      if (savedCoord) {
-        const parsed = JSON.parse(savedCoord);
-        if (parsed && (parsed.isCoordinator || parsed.pin === '031693872')) {
-          return {
-            uid: 'coord_17',
-            email: 'itab.bayadsi@musherfe.com',
-            displayName: 'عتاب بيدوسي (المركزة التربوية)',
-            isCoordinator: true,
-            role: 'coordinator'
-          };
-        }
-      }
+      // Dashboard is strictly exclusive to Principal Rami Arfaia
     } catch (e) {}
     return null;
   });
@@ -2736,21 +2724,7 @@ const AdminDashboard = () => {
               return;
             }
           }
-          const savedCoord = localStorage.getItem('musherfe_coordinator_session');
-          if (savedCoord) {
-            const parsed = JSON.parse(savedCoord);
-            if (parsed && (parsed.isCoordinator || parsed.pin === '031693872')) {
-              setUser({
-                uid: 'coord_17',
-                email: 'itab.bayadsi@musherfe.com',
-                displayName: 'عتاب بيدوسي (المركزة التربوية)',
-                isCoordinator: true,
-                role: 'coordinator'
-              });
-              setIsAdmin2FAVerified(true);
-              return;
-            }
-          }
+          // Dashboard is strictly exclusive to Principal Rami Arfaia
         } catch (e) {}
         setUser(null);
       }
@@ -3160,11 +3134,7 @@ const AdminDashboard = () => {
       return;
     }
 
-    // Allow direct coordinator PIN login through standard form
-    if ((loginPassword && loginPassword.trim() === '031693872') || (loginEmail && (loginEmail.includes('عتاب') || loginEmail.includes('031693872')))) {
-      handleCoordinatorAdminLogin(e, '031693872');
-      return;
-    }
+    // Dashboard access is strictly restricted to Principal Rami Arfaia only
 
     // Rate Limiting check on Admin Login
     const rateStatus = checkRateLimit('admin_auth');
@@ -4498,46 +4468,11 @@ const AdminDashboard = () => {
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem', background: '#f1f5f9', padding: '4px', borderRadius: '12px' }}>
-            <button
-              type="button"
-              onClick={() => { setAdminLoginTab('principal'); setLoginError(''); }}
-              style={{
-                flex: 1,
-                padding: '8px 10px',
-                borderRadius: '9px',
-                border: 'none',
-                background: adminLoginTab === 'principal' ? '#ffffff' : 'transparent',
-                color: adminLoginTab === 'principal' ? '#0f172a' : '#64748b',
-                fontWeight: 800,
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-                boxShadow: adminLoginTab === 'principal' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none'
-              }}
-            >
-              🏛️ مدير المدرسة
-            </button>
-            <button
-              type="button"
-              onClick={() => { setAdminLoginTab('coordinator'); setCoordLoginError(''); }}
-              style={{
-                flex: 1,
-                padding: '8px 10px',
-                borderRadius: '9px',
-                border: 'none',
-                background: adminLoginTab === 'coordinator' ? '#ffffff' : 'transparent',
-                color: adminLoginTab === 'coordinator' ? '#4f46e5' : '#64748b',
-                fontWeight: 800,
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-                boxShadow: adminLoginTab === 'coordinator' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none'
-              }}
-            >
-              👩‍🏫 المركزة التربوية
-            </button>
+          <div style={{ background: '#fef3c7', border: '1px solid #fde68a', color: '#92400e', padding: '0.65rem 0.9rem', borderRadius: '12px', marginBottom: '1.25rem', fontSize: '0.84rem', fontWeight: 800, textAlign: 'center' }}>
+            🔒 גישה בלעדית למנהל האתר בלבד — ארפאעיה ראמי (حصري لمدير الموقع رامي ارفاعية)
           </div>
 
-          {adminLoginTab === 'coordinator' ? (
+          {false ? (
             <form onSubmit={handleCoordinatorAdminLogin}>
               <div style={{ marginBottom: '1.25rem' }}>
                 <label className="form-label">المعلمة / المركزة التربوية</label>

@@ -72,6 +72,7 @@ const QanatPage = lazyWithRetry(() => import('./components/QanatPage'));
 const AflamMaharatPage = lazyWithRetry(() => import('./components/AflamMaharatPage'));
 const SchoolPadletPage = lazyWithRetry(() => import('./components/SchoolPadletPage'));
 const HolisticMappingPage = lazyWithRetry(() => import('./components/HolisticMappingPage'));
+const TeacherProfilePage = lazyWithRetry(() => import('./components/TeacherProfilePage'));
 const RavenExamPage = lazyWithRetry(() => import('./components/RavenExamPage'));
 const FloatingActions = lazyWithRetry(() => import('./components/FloatingActions'));
 const AiAssistant = lazyWithRetry(() => import('./components/AiAssistant'));
@@ -80,6 +81,7 @@ const SocraticHomeworkModal = lazyWithRetry(() => import('./components/SocraticH
 const CentralNotificationModal = lazyWithRetry(() => import('./components/CentralNotificationModal'));
 const StudentAuthModal = lazyWithRetry(() => import('./components/StudentAuthModal'));
 import { getStudentSession } from './utils/studentAuth';
+import { initTeacherProfilesSync } from './utils/teacherAuth';
 
 
 function App() {
@@ -90,6 +92,7 @@ function App() {
   const [isStudentAuthOpen, setIsStudentAuthOpen] = useState(false);
 
   useEffect(() => {
+    initTeacherProfilesSync();
     const unsub = subscribeScientificResearchVisibility((val) => {
       setIsResearchVisible(val);
     });
@@ -188,6 +191,10 @@ function App() {
   const isTasbihView = currentHash.includes('tasbih');
   const isDebateView = currentHash.includes('debate') || currentHash.includes('munathara');
   const isPadletView = currentHash.includes('padlet') || currentHash.includes('badlet');
+  const isTeacherProfileView =
+    currentHash.includes('teacher-profile') ||
+    currentHash === '#/profile' ||
+    currentHash.startsWith('#/profile?');
   const isHolisticMappingView =
     currentHash.includes('holistic-mapping') ||
     currentHash.includes('holistic') ||
@@ -213,6 +220,14 @@ function App() {
     return (
       <Suspense fallback={<Loader />}>
         <SchoolPadletPage />
+      </Suspense>
+    );
+  }
+
+  if (isTeacherProfileView) {
+    return (
+      <Suspense fallback={<Loader />}>
+        <TeacherProfilePage />
       </Suspense>
     );
   }

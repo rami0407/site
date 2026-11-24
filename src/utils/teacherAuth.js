@@ -67,6 +67,40 @@ try {
   customTeachersCache = [];
 }
 
+// ==================== GLOBAL LIVE TEACHER PROFILES CACHE ====================
+const TEACHER_PROFILES_STORAGE_KEY = 'musherfe_teacher_profiles_v1';
+const TAB_TEACHER_SESSION_KEY = 'musherfe_tab_teacher_session_v1';
+let teacherProfilesCache = {};
+let profilesListenerStarted = false;
+
+try {
+  const savedProfiles = getSecureStorage(TEACHER_PROFILES_STORAGE_KEY, {});
+  if (savedProfiles && typeof savedProfiles === 'object') {
+    teacherProfilesCache = savedProfiles;
+  }
+} catch {
+  teacherProfilesCache = {};
+}
+
+const mergeTeacherWithProfile = (t) => {
+  if (!t || !t.id) return t;
+  const prof = teacherProfilesCache[t.id];
+  if (!prof) return t;
+  const merged = {
+    ...t,
+    email: prof.email !== undefined && prof.email !== '' ? prof.email : t.email,
+    phone: prof.phone !== undefined && prof.phone !== '' ? prof.phone : t.phone,
+    role: prof.role !== undefined && prof.role !== '' ? prof.role : t.role,
+    photoUrl: prof.photoUrl || t.photoUrl || '',
+    subjects: prof.subjects || t.subjects || '',
+    bio: prof.bio || t.bio || '',
+    receptionHours: prof.receptionHours || t.receptionHours || '',
+    profileUpdatedAt: prof.updatedAt || null
+  };
+  merged.displayName = `${merged.nameAr || merged.nameHe} (${merged.nameHe || merged.nameAr})`;
+  return merged;
+};
+
 // In-memory cache of mapped teachers with stable reference
 const CACHED_TEACHERS = defaultSchoolTeachers.map(t => ({
   ...t,
@@ -74,18 +108,163 @@ const CACHED_TEACHERS = defaultSchoolTeachers.map(t => ({
 }));
 
 /**
- * Get all available school teachers (default + dynamically added custom teachers)
+ * Get all available school teachers (merged with live profile updates across the entire site)
  */
 export const getAllTeachers = () => {
-  if (!customTeachersCache || customTeachersCache.length === 0) return CACHED_TEACHERS;
-  const existingIds = new Set(CACHED_TEACHERS.map(t => t.id));
+  const baseList = CACHED_TEACHERS.map(mergeTeacherWithProfile);
+  if (!customTeachersCache || customTeachersCache.length === 0) return baseList;
+  const existingIds = new Set(baseList.map(t => t.id));
   const extras = customTeachersCache
     .filter(t => t && t.id && !existingIds.has(t.id))
-    .map(t => ({
+    .map(t => mergeTeacherWithProfile({
       ...t,
       displayName: `${t.nameAr || t.nameHe} (${t.nameHe || t.nameAr})`
     }));
-  return [...CACHED_TEACHERS, ...extras];
+  return [...baseList, ...extras];
+};
+
+/**
+ * Start real-time Firestore listener for all teacher profiles so updates appear live across the whole site
+ */
+export const initTeacherProfilesSync = () => {
+  if (profilesListenerStarted) return;
+  profilesListenerStarted = true;
+  try {
+    const sharedRef = doc(db, 'students', 'teacher_profiles_v1');
+    onSnapshot(sharedRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        const profilesMap = data?.profiles || {};
+        if (profilesMap && typeof profilesMap === 'object') {
+          teacherProfilesCache = { ...teacherProfilesCache, ...profilesMap };
+          try {
+            setSecureStorage(TEACHER_PROFILES_STORAGE_KEY, teacherProfilesCache);
+          } catch {}
+          // Keep current tab session synced with latest profile data
+          try {
+            const tabSess = getTabTeacherSession();
+            if (tabSess && tabSess.id && profilesMap[tabSess.id]) {
+              const refreshed = mergeTeacherWithProfile(tabSess);
+              sessionStorage.setItem(TAB_TEACHER_SESSION_KEY, JSON.stringify(refreshed));
+              setActiveTeacherSession(refreshed);
+            }
+          } catch {}
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('teacherProfileUpdated'));
+          }
+        }
+      }
+    }, () => {});
+  } catch (e) {
+    console.warn('Teacher profiles listener note:', e);
+  }
+};
+
+/**
+ * Get a teacher's live profile object
+ */
+export const getTeacherProfile = (teacherId) => {
+  if (!teacherId) return null;
+  const base = getTeacherById(teacherId);
+  return base ? mergeTeacherWithProfile(base) : (teacherProfilesCache[teacherId] || null);
+};
+
+/**
+ * Save and broadcast a teacher's profile updates (photo, email, phone, role, subjects, bio, receptionHours)
+ * immediately across the entire school website!
+ */
+export const saveTeacherProfile = async (teacherId, profileFields = {}) => {
+  if (!teacherId) return { success: false, error: 'Missing teacher ID' };
+  const nowIso = new Date().toISOString();
+  const nextProfile = {
+    ...(teacherProfilesCache[teacherId] || {}),
+    ...profileFields,
+    updatedAt: nowIso
+  };
+  teacherProfilesCache = {
+    ...teacherProfilesCache,
+    [teacherId]: nextProfile
+  };
+
+  try {
+    setSecureStorage(TEACHER_PROFILES_STORAGE_KEY, teacherProfilesCache);
+  } catch {}
+
+  // Update current active sessions so UI updates immediately
+  const updatedFull = getTeacherById(teacherId);
+  if (updatedFull) {
+    try {
+      const tabSess = getTabTeacherSession();
+      if (tabSess && tabSess.id === teacherId) {
+        const mergedSess = { ...tabSess, ...updatedFull };
+        sessionStorage.setItem(TAB_TEACHER_SESSION_KEY, JSON.stringify(mergedSess));
+        setActiveTeacherSession(mergedSess);
+      }
+    } catch {}
+  }
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('teacherProfileUpdated'));
+    window.dispatchEvent(new Event('teacherAuthChanged'));
+  }
+
+  try {
+    // Primary shared channel readable & writable across the whole site
+    await setDoc(
+      doc(db, 'students', 'teacher_profiles_v1'),
+      { profiles: { [teacherId]: nextProfile }, updatedAt: nowIso },
+      { merge: true }
+    );
+    // Mirror to dedicated teacher_profiles collection if permitted
+    setDoc(doc(db, 'teacher_profiles', teacherId), nextProfile, { merge: true }).catch(() => {});
+    return { success: true, profile: updatedFull || nextProfile };
+  } catch (err) {
+    console.warn('Teacher profile cloud save note:', err);
+    return { success: true, localOnly: true, profile: updatedFull || nextProfile };
+  }
+};
+
+/**
+ * Tab-scoped active teacher session (persists while navigating between Profile, Holistic Mapping & site tools,
+ * but requires fresh login in a new tab or after logout)
+ */
+export const getTabTeacherSession = () => {
+  try {
+    const raw = sessionStorage.getItem(TAB_TEACHER_SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && parsed.id ? mergeTeacherWithProfile(parsed) : null;
+  } catch {
+    return null;
+  }
+};
+
+export const setTabTeacherSession = (teacher) => {
+  try {
+    if (!teacher) {
+      sessionStorage.removeItem(TAB_TEACHER_SESSION_KEY);
+      removeSecureStorage(ACTIVE_TEACHER_KEY);
+    } else {
+      const merged = mergeTeacherWithProfile(teacher);
+      sessionStorage.setItem(TAB_TEACHER_SESSION_KEY, JSON.stringify(merged));
+      setActiveTeacherSession(merged);
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('teacherAuthChanged'));
+    }
+  } catch (err) {
+    console.warn('Tab session save note:', err);
+  }
+};
+
+export const clearTabTeacherSession = () => {
+  try {
+    sessionStorage.removeItem(TAB_TEACHER_SESSION_KEY);
+    removeSecureStorage(ACTIVE_TEACHER_KEY);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('teacherAuthChanged'));
+    }
+  } catch {}
 };
 
 /**

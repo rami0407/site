@@ -9,6 +9,9 @@ import {
   getActiveTeacherSession,
   setActiveTeacherSession,
   logoutTeacherSession,
+  getTabTeacherSession,
+  setTabTeacherSession,
+  clearTabTeacherSession,
   syncCustomTeachersList,
   updateTeacherPin,
   DEFAULT_TEACHER_PIN,
@@ -69,9 +72,9 @@ export const normalizeHolisticValue = (rawVal) => {
 
 const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   // ==================== 1. AUTHENTICATION & ROLE STATE ====================
-  // When opened from the school website (not embedded inside AdminDashboard),
-  // ALWAYS start on the 2-field landing page (Teacher Name + Personal Code).
-  const [activeTeacher, setActiveTeacher] = useState(null);
+  // Fresh visit/new tab ALWAYS starts on the 2-field landing page (Teacher Name + Personal Code).
+  // Once verified in this tab (via Holistic Mapping or Teacher Profile), carries the active profile seamlessly.
+  const [activeTeacher, setActiveTeacher] = useState(() => getTabTeacherSession());
   const [isFirebaseAdmin, setIsFirebaseAdmin] = useState(false);
 
   // Dynamic Teachers Directory (Default + Custom Teachers added by Principal)
@@ -1927,7 +1930,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
         }
 
         setActiveTeacher(sessionObj);
-        setActiveTeacherSession(sessionObj);
+        setTabTeacherSession(sessionObj);
         setLoginPinInput('');
       } else {
         setLoginError('❌ הקוד האישי שגוי. נא לבדוק את הקוד האישי ולהזין שוב.');
@@ -2725,9 +2728,39 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
             )}
 
             {!isAdminEmbed && (
+              <a
+                href="#/teacher-profile"
+                style={{
+                  background: 'linear-gradient(135deg, #0f766e 0%, #14b8a6 100%)',
+                  color: '#ffffff',
+                  border: '1.5px solid #5eead4',
+                  padding: '0.5rem 0.9rem',
+                  borderRadius: '12px',
+                  fontWeight: 900,
+                  fontSize: '0.82rem',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem'
+                }}
+                title="מעבר לפרופיל האישי שלי (עריכת פרטים, תמונה וסיסמה)"
+              >
+                {activeTeacher?.photoUrl ? (
+                  <img
+                    src={activeTeacher.photoUrl}
+                    alt=""
+                    style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover', border: '1px solid #fef08a' }}
+                  />
+                ) : (
+                  <span>👤</span>
+                )}
+                <span>הפרופיל שלי</span>
+              </a>
+
               <button
                 type="button"
                 onClick={() => {
+                  clearTabTeacherSession();
                   logoutTeacherSession();
                   setActiveTeacher(null);
                 }}

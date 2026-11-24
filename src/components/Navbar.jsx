@@ -3,6 +3,7 @@ import { db } from '../firebase';
 import { collection, getDocs, onSnapshot } from 'firebase/firestore';
 import { defaultNavigation, defaultTopNavigation, defaultMainNavigation } from '../data/defaultNavigationData';
 import { getStudentSession, logoutStudent, getStudentProgress, syncStudentProfileWithCloud } from '../utils/studentAuth';
+import { getTabTeacherSession, clearTabTeacherSession, initTeacherProfilesSync } from '../utils/teacherAuth';
 import StudentAuthModal from './StudentAuthModal';
 import NotificationCenter from './NotificationCenter';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -32,20 +33,25 @@ const Navbar = () => {
     return defaultMainNavigation;
   });
   const [studentSession, setStudentSession] = useState(getStudentSession());
+  const [teacherSession, setTeacherSession] = useState(() => getTabTeacherSession());
   const [studentPoints, setStudentPoints] = useState(() => getStudentProgress().totalPoints || 0);
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
   useEffect(() => {
+    initTeacherProfilesSync();
     const sess = getStudentSession();
     if (sess && sess.fullName) {
       syncStudentProfileWithCloud(sess.fullName, sess.idNumber, sess.studentClass);
     }
     const handleAuthChange = () => {
       setStudentSession(getStudentSession());
+      setTeacherSession(getTabTeacherSession());
       setStudentPoints(getStudentProgress().totalPoints || 0);
     };
     window.addEventListener('studentAuthChanged', handleAuthChange);
     window.addEventListener('studentPointsUpdated', handleAuthChange);
+    window.addEventListener('teacherAuthChanged', handleAuthChange);
+    window.addEventListener('teacherProfileUpdated', handleAuthChange);
     window.addEventListener('storage', handleAuthChange);
     const intervalId = setInterval(() => {
       setStudentPoints(getStudentProgress().totalPoints || 0);
@@ -53,6 +59,8 @@ const Navbar = () => {
     return () => {
       window.removeEventListener('studentAuthChanged', handleAuthChange);
       window.removeEventListener('studentPointsUpdated', handleAuthChange);
+      window.removeEventListener('teacherAuthChanged', handleAuthChange);
+      window.removeEventListener('teacherProfileUpdated', handleAuthChange);
       window.removeEventListener('storage', handleAuthChange);
       clearInterval(intervalId);
     };
@@ -362,6 +370,78 @@ const Navbar = () => {
             </li>
 
             <li>
+              {teacherSession ? (
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                  color: '#ffffff',
+                  padding: '3px 10px',
+                  borderRadius: '20px',
+                  fontSize: '0.84rem',
+                  fontWeight: 900,
+                  border: '1px solid #93c5fd'
+                }}>
+                  <a
+                    href="#/teacher-profile"
+                    style={{ color: '#ffffff', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    title="הפרופיל האישי שלי"
+                  >
+                    {teacherSession.photoUrl ? (
+                      <img
+                        src={teacherSession.photoUrl}
+                        alt=""
+                        style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover', border: '1px solid #fef08a' }}
+                      />
+                    ) : (
+                      <span>👤</span>
+                    )}
+                    <span>{teacherSession.nameHe || teacherSession.nameAr}</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => clearTabTeacherSession()}
+                    title="התנתקות"
+                    style={{
+                      background: 'rgba(255,255,255,0.2)',
+                      border: 'none',
+                      color: '#ffffff',
+                      borderRadius: '50%',
+                      width: '20px',
+                      height: '20px',
+                      cursor: 'pointer',
+                      fontSize: '0.7rem',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <a
+                  href="#/teacher-profile"
+                  className="top-admin-link"
+                  title="פרופיל אישי למורים"
+                  style={{
+                    background: 'linear-gradient(135deg, #0f766e 0%, #14b8a6 100%)',
+                    color: '#ffffff',
+                    padding: '4px 12px',
+                    borderRadius: '20px',
+                    fontWeight: 900,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px'
+                  }}
+                >
+                  <i className="fas fa-user-tie"></i> פרופיל מורים
+                </a>
+              )}
+            </li>
+
+            <li>
               <a
                 href="#/holistic-mapping"
                 className="top-admin-link"
@@ -535,6 +615,11 @@ const Navbar = () => {
                 <li>
                   <a href="#/guard" onClick={() => setMobileMenuOpen(false)} style={{ color: '#34d399', fontWeight: 800 }}>
                     <i className="fas fa-shield-alt"></i> بوابة الحارس والأمن 🛡️
+                  </a>
+                </li>
+                <li>
+                  <a href="#/teacher-profile" onClick={() => setMobileMenuOpen(false)} style={{ color: '#2dd4bf', fontWeight: 900 }}>
+                    <i className="fas fa-user-tie"></i> פרופיל מורים אישי 👤
                   </a>
                 </li>
                 <li>
