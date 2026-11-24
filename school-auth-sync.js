@@ -835,18 +835,25 @@
           <div class="school-form-group">
             <label>🏫 اختر الصف الدراسي / الفئة:</label>
             <select id="school-input-class">
-              <option value="الصف الأول (أ)">الصف الأول (أ)</option>
-              <option value="الصف الأول (ب)">الصف الأول (ب)</option>
-              <option value="الصف الثاني (أ)">الصف الثاني (أ)</option>
-              <option value="الصف الثاني (ب)">الصف الثاني (ب)</option>
-              <option value="الصف الثالث (أ)">الصف الثالث (أ)</option>
-              <option value="الصف الثالث (ب)">الصف الثالث (ب)</option>
-              <option value="الصف الرابع (أ)">الصف الرابع (أ)</option>
-              <option value="الصف الرابع (ب)">الصف الرابع (ب)</option>
-              <option value="الصف الخامس (أ)">الصف الخامس (أ)</option>
-              <option value="الصف الخامس (ب)">الصف الخامس (ب)</option>
-              <option value="الصف السادس (أ)">الصف السادس (أ)</option>
-              <option value="الصف السادس (ب)">الصف السادس (ب)</option>
+              <option value="الصف الأول (أ)">الصف الأول (أ) - الأول 1</option>
+              <option value="الصف الأول (ب)">الصف الأول (ب) - الأول 2</option>
+              <option value="الصف الأول (ج)">الصف الأول (ج) - الأول 3</option>
+              <option value="الصف الثاني (أ)">الصف الثاني (أ) - الثاني 1</option>
+              <option value="الصف الثاني (ب)">الصف الثاني (ب) - الثاني 2</option>
+              <option value="الصف الثاني (ج)">الصف الثاني (ج) - الثاني 3</option>
+              <option value="الصف الثالث (أ)">الصف الثالث (أ) - الثالث 1</option>
+              <option value="الصف الثالث (ب)">الصف الثالث (ب) - الثالث 2</option>
+              <option value="الصف الثالث (ج)">الصف الثالث (ج) - الثالث 3</option>
+              <option value="الصف الرابع (أ)">الصف الرابع (أ) - الرابع 1</option>
+              <option value="الصف الرابع (ب)">الصف الرابع (ب) - الرابع 2</option>
+              <option value="الصف الرابع (ج)">الصف الرابع (ج) - الرابع 3</option>
+              <option value="الصف الخامس (أ)">الصف الخامس (أ) - الخامس 1</option>
+              <option value="الصف الخامس (ب)">الصف الخامس (ب) - الخامس 2</option>
+              <option value="الصف الخامس (ج)">الصف الخامس (ج) - الخامس 3</option>
+              <option value="الصف السادس (أ)">الصف السادس (أ) - السادس 1</option>
+              <option value="الصف السادس (ب)">الصف السادس (ب) - السادس 2</option>
+              <option value="الصف السادس (ج)">الصف السادس (ج) - السادس 3</option>
+              <option value="الصف السادس (د)">الصف السادس (د) - السادس 4</option>
               <option value="معلم في المدرسة 👨‍🏫">👨‍🏫 معلم في المدرسة</option>
               <option value="زائر للموقع 👤">👤 زائر / ولي أمر</option>
             </select>
@@ -886,7 +893,31 @@
 
     const classSelect = document.getElementById('school-input-class');
     if (classSelect && currClass) {
-      classSelect.value = currClass;
+      let matched = false;
+      for (let i = 0; i < classSelect.options.length; i++) {
+        if (classSelect.options[i].value === currClass) {
+          classSelect.selectedIndex = i;
+          matched = true;
+          break;
+        }
+      }
+      if (!matched) {
+        const grades = ['الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس'];
+        const g = grades.find(x => currClass.includes(x));
+        let sec = '';
+        if (currClass.includes('4') || currClass.includes('د')) sec = 'د';
+        else if (currClass.includes('3') || currClass.includes('ج')) sec = 'ج';
+        else if (currClass.includes('2') || currClass.includes('ب')) sec = 'ب';
+        else if (currClass.includes('1') || currClass.includes('أ')) sec = 'أ';
+        if (g && sec) {
+          for (let i = 0; i < classSelect.options.length; i++) {
+            if (classSelect.options[i].value.includes(g) && classSelect.options[i].value.includes(sec)) {
+              classSelect.selectedIndex = i;
+              break;
+            }
+          }
+        }
+      }
     }
 
     const form = document.getElementById('school-auth-form');

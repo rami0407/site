@@ -12,6 +12,7 @@ import {
   onSnapshot 
 } from 'firebase/firestore';
 import { defaultSchoolTeachers } from '../data/schoolTeachersData';
+import { SCHOOL_CLASSES_LIST } from '../data/schoolStudentsRoster';
 import { sanitizeText } from '../utils/security';
 import { validateHoneypot } from '../utils/securityAudit';
 
@@ -1864,14 +1865,9 @@ const AppointmentBooking = ({ isStandalone = true }) => {
                     onChange={(e) => setStudentClass(e.target.value)}
                     style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '14px', border: '2px solid #cbd5e1', fontWeight: 700, fontSize: '1rem', boxSizing: 'border-box' }}
                   >
-                    <option value="الصف الأول (أ)">الصف الأول (أ)</option>
-                    <option value="الصف الأول (ب)">الصف الأول (ب)</option>
-                    <option value="الصف الثاني (أ)">الصف الثاني (أ)</option>
-                    <option value="الصف الثاني (ب)">الصف الثاني (ب)</option>
-                    <option value="الصف الثالث (أ)">الصف الثالث (أ)</option>
-                    <option value="الصف الرابع (أ)">الصف الرابع (أ)</option>
-                    <option value="الصف الخامس (أ)">الصف الخامس (أ)</option>
-                    <option value="الصف السادس (أ)">الصف السادس (أ)</option>
+                    {SCHOOL_CLASSES_LIST.map((c) => (
+                      <option key={c.value} value={c.value}>{c.label}</option>
+                    ))}
                   </select>
                 </div>
               </div>

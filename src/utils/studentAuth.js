@@ -1,4 +1,4 @@
-import { findStudentByRosterId, normalizeRosterId } from '../data/schoolStudentsRoster';
+import { findStudentByRosterId, normalizeRosterId, normalizeClassToDropdownValue } from '../data/schoolStudentsRoster';
 // Utility module for Global Unified User Session (Single Sign-On) & Persistent Student Progress Vault
 // Supports Students, Teachers, and Visitors across all site features, games, and devices
 
@@ -396,7 +396,7 @@ export const getStudentSession = () => {
       const stu = findStudentByRosterId(manasaId);
       if (stu) {
         const studentName = localStorage.getItem('manasa-name') || stu.studentName;
-        const studentClass = `${stu.gradeArabic || 'الصف'} (${stu.classArabic || stu.classLabel || ''})`;
+        const studentClass = normalizeClassToDropdownValue(stu.classKey || stu.classArabic || stu.gradeArabic);
         const bridged = {
           fullName: studentName,
           idNumber: stu.idNumber,
@@ -451,7 +451,7 @@ export const loginStudentByIdNumber = (idInput) => {
 
   const fullName = student.studentName;
   const idNumber = student.idNumber;
-  const studentClass = `${student.gradeArabic || 'الصف'} (${student.classArabic || student.classLabel || ''})`;
+  const studentClass = normalizeClassToDropdownValue(student.classKey || student.classArabic || student.gradeArabic);
 
   const session = saveStudentSession({
     fullName,

@@ -1,4 +1,4 @@
-import { findStudentByRosterId, normalizeRosterId } from '../data/schoolStudentsRoster';
+import { findStudentByRosterId, normalizeRosterId, SCHOOL_CLASSES_LIST, normalizeClassToDropdownValue } from '../data/schoolStudentsRoster';
 import React, { useState, useEffect } from 'react';
 import { getStudentSession, saveStudentSession } from '../utils/studentAuth';
 import { sanitizeText } from '../utils/security';
@@ -8,7 +8,7 @@ const StudentAuthModal = ({ isOpen, onClose, onSuccess }) => {
   const currentSession = getStudentSession();
   const [fullName, setFullName] = useState(currentSession?.fullName || '');
   const [idNumber, setIdNumber] = useState(currentSession?.idNumber !== '000000000' ? (currentSession?.idNumber || '') : '');
-  const [studentClass, setStudentClass] = useState(currentSession?.studentClass || 'الصف الثالث (أ)');
+  const [studentClass, setStudentClass] = useState(normalizeClassToDropdownValue(currentSession?.studentClass || 'الصف الثالث (أ)'));
   const [errorMsg, setErrorMsg] = useState('');
   const [matchedRosterStudent, setMatchedRosterStudent] = useState(null);
 
@@ -24,7 +24,7 @@ const StudentAuthModal = ({ isOpen, onClose, onSuccess }) => {
         if (!fullName || fullName === currentSession?.fullName) {
           setFullName(match.studentName);
         }
-        const cls = `${match.gradeArabic || 'الصف'} (${match.classArabic || match.classLabel || ''})`;
+        const cls = normalizeClassToDropdownValue(match.classKey || match.classArabic || match.gradeArabic);
         setStudentClass(cls);
       } else {
         setMatchedRosterStudent(null);
@@ -40,7 +40,7 @@ const StudentAuthModal = ({ isOpen, onClose, onSuccess }) => {
       if (sess) {
         setFullName(sess.fullName || '');
         setIdNumber(sess.idNumber !== '000000000' ? (sess.idNumber || '') : '');
-        setStudentClass(sess.studentClass || 'الصف الثالث (أ)');
+        setStudentClass(normalizeClassToDropdownValue(sess.studentClass || 'الصف الثالث (أ)'));
       }
     }
   }, [isOpen]);
@@ -201,18 +201,11 @@ const StudentAuthModal = ({ isOpen, onClose, onSuccess }) => {
           <div className="auth-form-group">
             <label><i className="fas fa-school"></i> اختر الصف / الفئة:</label>
             <select value={studentClass} onChange={(e) => setStudentClass(e.target.value)}>
-              <option value="الصف الأول (أ)">الصف الأول (أ)</option>
-              <option value="الصف الأول (ب)">الصف الأول (ب)</option>
-              <option value="الصف الثاني (أ)">الصف الثاني (أ)</option>
-              <option value="الصف الثاني (ب)">الصف الثاني (ب)</option>
-              <option value="الصف الثالث (أ)">الصف الثالث (أ)</option>
-              <option value="الصف الثالث (ب)">الصف الثالث (ب)</option>
-              <option value="الصف الرابع (أ)">الصف الرابع (أ)</option>
-              <option value="الصف الرابع (ب)">الصف الرابع (ب)</option>
-              <option value="الصف الخامس (أ)">الصف الخامس (أ)</option>
-              <option value="الصف الخامس (ب)">الصف الخامس (ب)</option>
-              <option value="الصف السادس (أ)">الصف السادس (أ)</option>
-              <option value="الصف السادس (ب)">الصف السادس (ب)</option>
+              {SCHOOL_CLASSES_LIST.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
               <option value="معلم في المدرسة 👨‍🏫">👨‍🏫 معلم في المدرسة</option>
               <option value="زائر للموقع 👤">👤 زائر / ولي أمر</option>
             </select>

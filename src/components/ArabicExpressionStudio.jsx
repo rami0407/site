@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import './ArabicExpressionStudio.css';
 import { EXPRESSION_TOPICS, ARABIC_WRITING_TOOLS } from '../data/arabicExpressionTopics';
+import { SCHOOL_CLASSES_LIST } from '../data/schoolStudentsRoster';
 import { 
   checkRequiredWordBank, 
   evaluateExpressionWithAi 
@@ -291,18 +292,9 @@ export default function ArabicExpressionStudio() {
                     outline: 'none'
                   }}
                 >
-                  <option value="الصف الأول (أ)">الصف الأول (أ)</option>
-                  <option value="الصف الأول (ب)">الصف الأول (ب)</option>
-                  <option value="الصف الثاني (أ)">الصف الثاني (أ)</option>
-                  <option value="الصف الثاني (ب)">الصف الثاني (ب)</option>
-                  <option value="الصف الثالث (أ)">الصف الثالث (أ)</option>
-                  <option value="الصف الثالث (ب)">الصف الثالث (ب)</option>
-                  <option value="الصف الرابع (أ)">الصف الرابع (أ)</option>
-                  <option value="الصف الرابع (ب)">الصف الرابع (ب)</option>
-                  <option value="الصف الخامس (أ)">الصف الخامس (أ)</option>
-                  <option value="الصف الخامس (ب)">الصف الخامس (ب)</option>
-                  <option value="الصف السادس (أ)">الصف السادس (أ)</option>
-                  <option value="الصف السادس (ب)">الصف السادس (ب)</option>
+                  {SCHOOL_CLASSES_LIST.map((c) => (
+                    <option key={c.value} value={c.value}>{c.label}</option>
+                  ))}
                 </select>
               </div>
             </div>

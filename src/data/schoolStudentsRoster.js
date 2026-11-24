@@ -17572,3 +17572,71 @@ export const findStudentByName = (name) => {
   const clean = name.trim().toLowerCase();
   return ALL_STUDENTS_LIST.find(s => (s.studentName || '').toLowerCase().includes(clean)) || null;
 };
+
+// All 19 Official School Classes (Grades 1-6 with Sections 1, 2, 3 [أ, ب, ج], plus Section 4 [د] for Grade 6)
+export const SCHOOL_CLASSES_LIST = [
+  { value: 'الصف الأول (أ)', label: 'الصف الأول (أ) - الأول 1', grade: 'الصف الأول', section: 'أ', sectionNum: 1 },
+  { value: 'الصف الأول (ب)', label: 'الصف الأول (ب) - الأول 2', grade: 'الصف الأول', section: 'ب', sectionNum: 2 },
+  { value: 'الصف الأول (ج)', label: 'الصف الأول (ج) - الأول 3', grade: 'الصف الأول', section: 'ج', sectionNum: 3 },
+  { value: 'الصف الثاني (أ)', label: 'الصف الثاني (أ) - الثاني 1', grade: 'الصف الثاني', section: 'أ', sectionNum: 1 },
+  { value: 'الصف الثاني (ب)', label: 'الصف الثاني (ب) - الثاني 2', grade: 'الصف الثاني', section: 'ب', sectionNum: 2 },
+  { value: 'الصف الثاني (ج)', label: 'الصف الثاني (ج) - الثاني 3', grade: 'الصف الثاني', section: 'ج', sectionNum: 3 },
+  { value: 'الصف الثالث (أ)', label: 'الصف الثالث (أ) - الثالث 1', grade: 'الصف الثالث', section: 'أ', sectionNum: 1 },
+  { value: 'الصف الثالث (ب)', label: 'الصف الثالث (ب) - الثالث 2', grade: 'الصف الثالث', section: 'ب', sectionNum: 2 },
+  { value: 'الصف الثالث (ج)', label: 'الصف الثالث (ج) - الثالث 3', grade: 'الصف الثالث', section: 'ج', sectionNum: 3 },
+  { value: 'الصف الرابع (أ)', label: 'الصف الرابع (أ) - الرابع 1', grade: 'الصف الرابع', section: 'أ', sectionNum: 1 },
+  { value: 'الصف الرابع (ب)', label: 'الصف الرابع (ب) - الرابع 2', grade: 'الصف الرابع', section: 'ب', sectionNum: 2 },
+  { value: 'الصف الرابع (ج)', label: 'الصف الرابع (ج) - الرابع 3', grade: 'الصف الرابع', section: 'ج', sectionNum: 3 },
+  { value: 'الصف الخامس (أ)', label: 'الصف الخامس (أ) - الخامس 1', grade: 'الصف الخامس', section: 'أ', sectionNum: 1 },
+  { value: 'الصف الخامس (ب)', label: 'الصف الخامس (ب) - الخامس 2', grade: 'الصف الخامس', section: 'ب', sectionNum: 2 },
+  { value: 'الصف الخامس (ج)', label: 'الصف الخامس (ج) - الخامس 3', grade: 'الصف الخامس', section: 'ج', sectionNum: 3 },
+  { value: 'الصف السادس (أ)', label: 'الصف السادس (أ) - السادس 1', grade: 'الصف السادس', section: 'أ', sectionNum: 1 },
+  { value: 'الصف السادس (ب)', label: 'الصف السادس (ب) - السادس 2', grade: 'الصف السادس', section: 'ب', sectionNum: 2 },
+  { value: 'الصف السادس (ج)', label: 'الصف السادس (ج) - السادس 3', grade: 'الصف السادس', section: 'ج', sectionNum: 3 },
+  { value: 'الصف السادس (د)', label: 'الصف السادس (د) - السادس 4', grade: 'الصف السادس', section: 'د', sectionNum: 4 }
+];
+
+export const normalizeClassToDropdownValue = (str) => {
+  if (!str) return 'الصف الثالث (أ)';
+  const s = String(str).trim();
+  if (s.includes('معلم')) return 'معلم في المدرسة 👨‍🏫';
+  if (s.includes('زائر')) return 'زائر للموقع 👤';
+
+  // 1. Direct classKey format: class_G_S
+  const keyMatch = s.match(/class_(\d)_(\d)/);
+  if (keyMatch) {
+    const gNum = keyMatch[1];
+    const sNum = keyMatch[2];
+    const gradeNames = { '1': 'الصف الأول', '2': 'الصف الثاني', '3': 'الصف الثالث', '4': 'الصف الرابع', '5': 'الصف الخامس', '6': 'الصف السادس' };
+    const sectionLetters = { '1': 'أ', '2': 'ب', '3': 'ج', '4': 'د' };
+    if (gradeNames[gNum] && sectionLetters[sNum]) {
+      return `${gradeNames[gNum]} (${sectionLetters[sNum]})`;
+    }
+  }
+
+  // 2. Identify Grade
+  let grade = '';
+  if (s.includes('الأول') || s.includes('الاول')) grade = 'الصف الأول';
+  else if (s.includes('الثاني')) grade = 'الصف الثاني';
+  else if (s.includes('الثالث')) grade = 'الصف الثالث';
+  else if (s.includes('الرابع')) grade = 'الصف الرابع';
+  else if (s.includes('الخامس')) grade = 'الصف الخامس';
+  else if (s.includes('السادس')) grade = 'الصف السادس';
+
+  // 3. Identify Section (remove the grade name first to avoid false digit/letter matching)
+  let remainder = s;
+  if (grade) {
+    remainder = s.replace(grade, '').replace('الأول', '').replace('الاول', '').replace('الثاني', '').replace('الثالث', '').replace('الرابع', '').replace('الخامس', '').replace('السادس', '');
+  }
+
+  let section = '';
+  if (remainder.includes('4') || remainder.includes('د') || remainder.includes("ד'")) section = 'د';
+  else if (remainder.includes('3') || remainder.includes('ج') || remainder.includes("ג'")) section = 'ج';
+  else if (remainder.includes('2') || remainder.includes('ب') || remainder.includes("ב'")) section = 'ب';
+  else if (remainder.includes('1') || remainder.includes('أ') || remainder.includes('ا') || remainder.includes("א'")) section = 'أ';
+
+  if (grade && section) {
+    return `${grade} (${section})`;
+  }
+  return str;
+};

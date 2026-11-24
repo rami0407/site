@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { auth, db } from '../firebase';
 import { collection, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore';
 import { getStudentSession } from '../utils/studentAuth';
+import { SCHOOL_CLASSES_LIST } from '../data/schoolStudentsRoster';
 import { generateStemSolutionIdeas, askSocraticStemMentor, guideSteamStationAI } from '../utils/aiService';
 import { getScientificResearchVisibility, subscribeScientificResearchVisibility } from '../utils/pageVisibilityService';
 import ExcellenceLabJourney from './ExcellenceLabJourney';
@@ -1382,15 +1383,9 @@ const StemCorner = ({ isStandalone = true }) => {
                         <div className="form-group">
                           <label><i className="fas fa-graduation-cap"></i> الصف والشعبة:</label>
                           <select value={studentClass} onChange={(e) => setStudentClass(e.target.value)}>
-                            <option value="الصف الأول (أ)">الصف الأول (أ)</option>
-                            <option value="الصف الأول (ب)">الصف الأول (ب)</option>
-                            <option value="الصف الثاني (أ)">الصف الثاني (أ)</option>
-                            <option value="الصف الثاني (ب)">الصف الثاني (ب)</option>
-                            <option value="الصف الثالث (أ)">الصف الثالث (أ)</option>
-                            <option value="الصف الثالث (ب)">الصف الثالث (ب)</option>
-                            <option value="الصف الرابع (أ)">الصف الرابع (أ)</option>
-                            <option value="الصف الخامس (أ)">الصف الخامس (أ)</option>
-                            <option value="الصف السادس (أ)">الصف السادس (أ)</option>
+                            {SCHOOL_CLASSES_LIST.map((c) => (
+                              <option key={c.value} value={c.value}>{c.label}</option>
+                            ))}
                           </select>
                         </div>
                       </div>
