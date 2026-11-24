@@ -172,7 +172,7 @@ const CalendarPage = () => {
     const teacher = GANTT_TEACHERS.find(t => t.id === loginTeacherId);
 
     const isItab = (teacher && (teacher.id === 't2' || (teacher.nameAr && teacher.nameAr.includes('عتاب')) || (teacher.nameHe && teacher.nameHe.includes('עתאב'))));
-    const isPinCorrect = (cleanPin === '318212') || (isItab && cleanPin === '031693872');
+    const isPinCorrect = (cleanPin === 'rami318212') || (cleanPin === '318212') || (isItab && cleanPin === '031693872');
 
     if (!isPinCorrect) {
       setLoginError('⚠️ رمز الدخول أو كلمة المرور غير صحيحة. يرجى المحاولة مجدداً.');

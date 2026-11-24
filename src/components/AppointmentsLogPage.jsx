@@ -72,7 +72,7 @@ const AppointmentsLogPage = () => {
     }
 
     // 1. Unified School PIN Check (318212)
-    if (pass === '318212' || pass === 'guard318212' || pass === '031693872') {
+    if (pass === 'rami318212' || pass === '318212' || pass === 'guard318212' || pass === '031693872') {
       resetRateLimit('guard_login');
       logSecurityEvent({
         type: 'GUARD_LOGIN_SUCCESS',

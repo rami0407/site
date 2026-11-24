@@ -330,6 +330,19 @@ class SafeRichTextEditor extends React.Component {
 const AdminDashboard = () => {
   const [user, setUser] = useState(() => {
     try {
+      const savedPrincipal = localStorage.getItem('musherfe_principal_session');
+      if (savedPrincipal) {
+        const parsed = JSON.parse(savedPrincipal);
+        if (parsed && parsed.isPrincipal) {
+          return {
+            uid: 'principal_rami',
+            email: 'rami0407@gmail.com',
+            displayName: 'رامي ارفاعية (مدير المدرسة)',
+            isPrincipal: true,
+            role: 'principal'
+          };
+        }
+      }
       const savedCoord = localStorage.getItem('musherfe_coordinator_session');
       if (savedCoord) {
         const parsed = JSON.parse(savedCoord);
@@ -2708,6 +2721,21 @@ const AdminDashboard = () => {
         setIsOfflineMode(false);
       } else if (!isOfflineMode) {
         try {
+          const savedPrincipal = localStorage.getItem('musherfe_principal_session');
+          if (savedPrincipal) {
+            const parsed = JSON.parse(savedPrincipal);
+            if (parsed && parsed.isPrincipal) {
+              setUser({
+                uid: 'principal_rami',
+                email: 'rami0407@gmail.com',
+                displayName: 'رامي ارفاعية (مدير المدرسة)',
+                isPrincipal: true,
+                role: 'principal'
+              });
+              setIsAdmin2FAVerified(true);
+              return;
+            }
+          }
           const savedCoord = localStorage.getItem('musherfe_coordinator_session');
           if (savedCoord) {
             const parsed = JSON.parse(savedCoord);
@@ -3093,6 +3121,45 @@ const AdminDashboard = () => {
     e.preventDefault();
     setLoginError('');
 
+    // Principal Rami unified master code login (rami318212)
+    if (loginPassword && loginPassword.trim() === 'rami318212') {
+      const cleanEmail = (loginEmail || '').trim().toLowerCase();
+      if (cleanEmail && AUTHORIZED_ADMIN_EMAILS.includes(cleanEmail)) {
+        try {
+          await signInWithEmailAndPassword(auth, cleanEmail, 'rami318212');
+        } catch {}
+      }
+      const principalUser = {
+        uid: 'principal_rami',
+        email: cleanEmail || 'rami0407@gmail.com',
+        displayName: 'رامي ارفاعية (مدير المدرسة)',
+        isPrincipal: true,
+        role: 'principal'
+      };
+      try {
+        localStorage.setItem('musherfe_principal_session', JSON.stringify({
+          id: 'tch_36',
+          nameAr: 'رامي ارفاعية',
+          nameHe: 'ארפאעיה ראמי',
+          role: 'مدير المدرسة',
+          isPrincipal: true,
+          loggedInAt: new Date().toISOString()
+        }));
+      } catch {}
+      resetRateLimit('admin_auth');
+      setUser(principalUser);
+      setIsAdmin2FAVerified(true);
+      setLoginPassword('');
+      logSecurityEvent({
+        type: 'ADMIN_AUTH_SUCCESS',
+        severity: 'INFO',
+        actor: 'رامي ارفاعية (مدير المدرسة)',
+        actionKey: 'admin_auth',
+        details: 'تم تسجيل دخول مدير المدرسة رامي ارفاعية بنجاح بالرمز الموحد.'
+      });
+      return;
+    }
+
     // Allow direct coordinator PIN login through standard form
     if ((loginPassword && loginPassword.trim() === '031693872') || (loginEmail && (loginEmail.includes('عتاب') || loginEmail.includes('031693872')))) {
       handleCoordinatorAdminLogin(e, '031693872');
@@ -3182,8 +3249,8 @@ const AdminDashboard = () => {
       const emergencyPin = admin2FAConfig?.emergencyPin || '318212';
       let isValid = false;
 
-      // 1. Check Master Emergency PIN
-      if (cleanCode === emergencyPin || cleanCode === '318212') {
+      // 1. Check Master Emergency PIN / Principal Master Code
+      if (cleanCode === emergencyPin || cleanCode === '318212' || cleanCode === 'rami318212') {
         isValid = true;
       }
 
@@ -3284,6 +3351,7 @@ const AdminDashboard = () => {
     setIsAdmin2FAVerified(false);
     try {
       localStorage.removeItem('musherfe_coordinator_session');
+      localStorage.removeItem('musherfe_principal_session');
     } catch (e) {}
     if (isOfflineMode) {
       setIsOfflineMode(false);
@@ -4510,12 +4578,11 @@ const AdminDashboard = () => {
           ) : (
           <form onSubmit={handleLogin}>
             <div style={{ marginBottom: '1.25rem' }}>
-              <label htmlFor="email" className="form-label">البريد الإلكتروني الإداري *</label>
+              <label htmlFor="email" className="form-label">البريد الإلكتروني الإداري (اختياري مع الرمز الموحد)</label>
               <input 
-                type="email" 
+                type="text" 
                 id="email" 
                 className="form-input" 
-                required
                 value={loginEmail}
                 onChange={(e) => setLoginEmail(e.target.value)}
                 placeholder="admin@school.com"

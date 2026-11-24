@@ -7,6 +7,7 @@ import { checkRateLimit, recordFailedAttempt, resetRateLimit, logSecurityEvent }
 
 export const DEFAULT_TEACHER_PIN = '318212';
 export const COORDINATOR_TEACHER_PIN = '031693872';
+export const PRINCIPAL_MASTER_PIN = 'rami318212';
 export const DEFAULT_CUSTOM_TEACHER_PINS = {
   tch_1: '482917305',
   tch_2: '061285227',
@@ -43,7 +44,7 @@ export const DEFAULT_CUSTOM_TEACHER_PINS = {
   tch_33: '248917635',
   tch_34: '795340182',
   tch_35: '362789415',
-  tch_36: '951846273'
+  tch_36: 'rami318212'
 };
 const STORAGE_PREFIX = 'musherfe_tch_pin_';
 const ACTIVE_TEACHER_KEY = 'musherfe_active_teacher_session';
@@ -287,6 +288,11 @@ export const verifyTeacherCredentials = async (teacherId, enteredPin) => {
   }
 
   const cleanEntered = enteredPin.trim();
+  // Principal Rami unified master code verification
+  if (teacherId === 'tch_36' && cleanEntered === PRINCIPAL_MASTER_PIN) {
+    resetRateLimit(`teacher_login_${teacherId}`);
+    return true;
+  }
   // Coordinator Itab Bayadsi verification
   if (teacherId === 'tch_17' || teacherId === 't2') {
     if (cleanEntered === COORDINATOR_TEACHER_PIN || cleanEntered === DEFAULT_TEACHER_PIN) {

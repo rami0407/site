@@ -1930,7 +1930,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
         setActiveTeacherSession(sessionObj);
         setLoginPinInput('');
       } else {
-        setLoginError('❌ הקוד האישי שגוי. נא לבדוק את הקוד האישי בן 9 הספרות ולהזין שוב.');
+        setLoginError('❌ הקוד האישי שגוי. נא לבדוק את הקוד האישי ולהזין שוב.');
       }
     } finally {
       setIsLoggingIn(false);
@@ -2298,7 +2298,6 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
               </label>
               <input
                 type="password"
-                inputMode="numeric"
                 autoComplete="off"
                 value={loginPinInput}
                 onChange={(e) => setLoginPinInput(e.target.value)}

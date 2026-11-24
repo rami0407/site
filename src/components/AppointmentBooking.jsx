@@ -325,7 +325,7 @@ const AppointmentBooking = ({ isStandalone = true }) => {
     if (e && e.preventDefault) e.preventDefault();
     setCoordAuthError('');
     const clean = coordAuthPin.trim();
-    if (clean === '031693872' || clean === '318212') {
+    if (clean === 'rami318212' || clean === '031693872' || clean === '318212') {
       try {
         localStorage.setItem('musherfe_coordinator_session', JSON.stringify({
           id: 'tch_17',
