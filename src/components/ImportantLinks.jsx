@@ -5,34 +5,36 @@ import { importantLinks as fallbackLinks } from '../data/schoolData';
 
 const normalizeAnnualPlansLink = (rawList) => {
   if (!Array.isArray(rawList)) return fallbackLinks;
-  let foundAnnualPlans = false;
+  let foundHolistic = false;
   const mapped = rawList.map((item) => {
-    const isBulletinBoard =
-      (item.title && (item.title.includes('لوح الاعلانات') || item.title.includes('لوح الإعلانات'))) ||
-      (item.desc && (item.desc.includes('لوح الاعلانات') || item.desc.includes('لوح الإعلانات'))) ||
-      item.title === 'خطط سنوية' ||
+    const isHolistic =
+      (item.id === 'azmHUD89qE2pnifcDDy4') ||
+      (item.title && (item.title.includes('لوح الاعلانات') || item.title.includes('لوح الإعلانات') || item.title.includes('خطط سنوية') || item.title.includes('מיפוי הוליסטי') || item.title.includes('المسح الشامل'))) ||
+      (item.desc && (item.desc.includes('لوح الاعلانات') || item.desc.includes('لوح الإعلانات') || item.desc.includes('خطط سنوية') || item.desc.includes('מיפוי הוליסטי') || item.desc.includes('المسح الشامل'))) ||
       (item.url && item.url.includes('holistic-mapping'));
 
-    if (isBulletinBoard) {
-      foundAnnualPlans = true;
+    if (isHolistic) {
+      foundHolistic = true;
       return {
         ...item,
-        title: 'خطط سنوية',
-        desc: 'خطط سنوية',
+        title: 'المسح الشامل — מיפוי הוליסטי (למורים)',
+        desc: 'منظومة المسح الشامل والمتابعة التربوية والتحصيل لجميع الصفوف (19 صفاً) / מערכת מיפוי הוליסטי רב-שנתי לתלמיד',
         url: '#/holistic-mapping',
-        icon: item.icon || 'fa-link'
+        icon: 'fa-chart-pie',
+        badge: 'מיפוי הוליסטי 📊'
       };
     }
     return item;
   });
 
-  if (!foundAnnualPlans) {
+  if (!foundHolistic) {
     mapped.push({
-      id: 'school-annual-plans-default',
-      title: 'خطط سنوية',
-      icon: 'fa-link',
+      id: 'azmHUD89qE2pnifcDDy4',
+      title: 'المسح الشامل — מיפוי הוליסטי (למורים)',
+      icon: 'fa-chart-pie',
       url: '#/holistic-mapping',
-      desc: 'خطط سنوية'
+      desc: 'منظومة المسح الشامل والمتابعة التربوية والتحصيل لجميع الصفوف (19 صفاً) / מערכת מיפוי הוליסטי רב-שנתי לתלמיד',
+      badge: 'מיפוי הוליסטי 📊'
     });
   }
   return mapped;
@@ -65,16 +67,19 @@ const ImportantLinks = () => {
         }
 
         list = list.map(d => {
-          const isOldBulletin =
-            (d.title && (d.title.includes('لوح الاعلانات') || d.title.includes('لوح الإعلانات'))) ||
-            (d.desc && (d.desc.includes('لوح الاعلانات') || d.desc.includes('لوح الإعلانات')));
-          if (isOldBulletin) {
+          const isHolistic =
+            (d.id === 'azmHUD89qE2pnifcDDy4') ||
+            (d.url && d.url.includes('holistic-mapping')) ||
+            (d.title && (d.title.includes('لوح الاعلانات') || d.title.includes('لوح الإعلانات') || d.title.includes('خطط سنوية') || d.title.includes('מיפוי הוליסטי') || d.title.includes('المسح الشامل'))) ||
+            (d.desc && (d.desc.includes('لوح الاعلانات') || d.desc.includes('لوح الإعلانات') || d.desc.includes('خطط سنوية') || d.desc.includes('מיפוי הוליסטי') || d.desc.includes('المسح الشامل')));
+          if (isHolistic) {
             return {
               ...d,
-              title: 'خطط سنوية',
-              desc: 'خطط سنوية',
+              title: 'المسح الشامل — מיפוי הוליסטי (למורים)',
+              desc: 'منظومة المسح الشامل والمتابعة التربوية والتحصيل لجميع الصفوف (19 صفاً) / מערכת מיפוי הוליסטי רב-שנתי לתלמיד',
               url: '#/holistic-mapping',
-              icon: d.icon || 'fa-link'
+              icon: 'fa-chart-pie',
+              badge: 'מיפוי הוליסטי 📊'
             };
           }
           return d;
@@ -248,9 +253,12 @@ const ImportantLinks = () => {
             const isAflam = link.url?.includes('skills-films') || link.url?.includes('aflam') || link.badge?.includes('أفلام المهارات') || link.title?.includes('أفلام المهارات');
             const isQanat = link.url?.includes('qanat') || link.badge?.includes('تعلّم وتمتّع') || link.title?.includes('القناة الرقمية');
             const isGreenChair = link.url?.includes('green-chair') || link.title?.includes('الكرسي الأخضر');
+            const isHolistic = link.url?.includes('holistic-mapping') || link.title?.includes('מיפוי הוליסטי') || link.title?.includes('المسح الشامل');
             let iconGradient = undefined;
             if (isGreenChair) {
               iconGradient = 'linear-gradient(135deg, #1B4332 0%, #2D6A4F 100%)';
+            } else if (isHolistic) {
+              iconGradient = 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #3b82f6 100%)';
             } else if (isTab) {
               iconGradient = 'linear-gradient(135deg, #1b5e3a 0%, #2f855a 50%, #0b6bcb 100%)';
             } else if (isMiftaah) {

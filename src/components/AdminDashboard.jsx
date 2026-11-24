@@ -2915,7 +2915,31 @@ const AdminDashboard = () => {
         const snapLinksDb = await getDocs(collection(db, 'links'));
         snapLinksDb.forEach(d => linkMap.set(d.id, { ...d.data(), id: d.id }));
       } catch (e) {}
-      const fetchedLinks = Array.from(linkMap.values());
+      const fetchedLinks = Array.from(linkMap.values()).map(l => {
+        if (l.id === "azmHUD89qE2pnifcDDy4" || (l.url && l.url.includes("holistic-mapping")) || l.title === "خطط سنوية") {
+          return {
+            ...l,
+            title: l.title && (l.title.includes("מיפוי הוליסטי") || l.title.includes("المسح الشامل")) ? l.title : "المسح الشامل — מיפוי הוליסטי (למורים)",
+            desc: l.desc && l.desc !== "خطط سنوية" ? l.desc : "منظومة المسح الشامل والمتابعة التربوية والتحصيل لجميع الصفوف (19 صفاً) / מערכת מיפוי הוליסטי רב-שנתי לתלמיד",
+            url: "#/holistic-mapping",
+            icon: l.icon || "fa-chart-pie",
+            badge: l.badge || "מיפוי הוליסטי 📊"
+          };
+        }
+        return l;
+      });
+      const hasHolistic = fetchedLinks.some(l => l.id === "azmHUD89qE2pnifcDDy4" || (l.url && l.url.includes("holistic-mapping")));
+      if (!hasHolistic) {
+        fetchedLinks.push({
+          id: "azmHUD89qE2pnifcDDy4",
+          title: "المسح الشامل — מיפוי הוליסטי (למורים)",
+          desc: "منظومة المسح الشامل والمتابعة التربوية والتحصيل لجميع الصفوف (19 صفاً) / מערכת מיפוי הוליסטי רב-שנתי לתלמיד",
+          url: "#/holistic-mapping",
+          icon: "fa-chart-pie",
+          badge: "מיפוי הוליסטי 📊",
+          createdAt: "2026-06-02T05:34:21.094Z"
+        });
+      }
       setLinks(fetchedLinks);
 
       // 7. Load Gallery
