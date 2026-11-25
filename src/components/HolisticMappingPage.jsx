@@ -560,51 +560,31 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
       return {
         hasAccess: true,
         isHomeroom: false,
-        canEditMapping: !!delegated.canEditMapping,
+        canEditMapping: true,
         canEditGrades: true,
         allowedSubjects: delegated.subjects || ['all'],
-        accessBadgeHe: delegated.canEditMapping
-          ? 'מורה מורשה (מיפוי + ציונים) ✅'
-          : 'מורה מקצועי מורשה להזנת ציונים 📝'
+        accessBadgeHe: 'מורה מורשה (מיפוי + ציונים) ✅'
       };
     }
 
-    // Every logged-in teacher in the school has full permission to fill in grades & skills for all classes!
-    // Sensitive social/behavioral notes in Section 1 remain restricted to homeroom & administration.
+    // Every logged-in teacher in the school can fill in both Holistic Mapping and Grades & Skills,
+    // syncing live in real time directly to Principal Rami and Coordinator Jihan!
     return {
       hasAccess: true,
       isHomeroom: false,
-      canEditMapping: false,
+      canEditMapping: true,
       canEditGrades: true,
       allowedSubjects: ['all'],
-      accessBadgeHe: 'מורה מקצועי (מורשה להזנת ציונים ומיומנויות) 📝'
+      accessBadgeHe: 'מורה בבית הספר (מורשה למילוי מיפוי וציונים — מסונכרן למנהל) ✅'
     };
   };
 
   // Compute classes visible to the current logged-in user:
-  // Principal Rami & Coordinator Jihan see all 19 classes. Regular homeroom/delegated teachers see ONLY their authorized class(es)!
+  // All logged-in teachers can access all 19 classes to fill in mapping & grades (homeroom class still opens first automatically).
   const visibleClasses = useMemo(() => {
-    if (userCapabilities.canViewAllClasses || userCapabilities.isSystemManager) {
-      return SCHOOL_19_CLASSES;
-    }
-    if (!activeTeacher) return [];
-
-    // In Section 2 (Grades & Skills Journal) and Section 3 (Combined 360 Profile):
-    // All teachers can select and navigate across all 19 classes to fill in their subject grades!
-    if (activeMainTab === 'grades-matrix' || activeMainTab === 'student-analytics') {
-      return SCHOOL_19_CLASSES;
-    }
-
-    // In Section 1 (Sensitive Social & Behavioral Mapping):
-    // Homeroom teachers see only their authorized homeroom / delegated class(es)
-    const allowed = SCHOOL_19_CLASSES.filter((cls) => {
-      const perm = classPermissions[cls.id] || {};
-      const isHome = perm.homeroomTeacherId === activeTeacher.id || activeTeacher.loginSelectedClassId === cls.id;
-      const isDelegated = (perm.delegatedTeachers || []).some((d) => d.teacherId === activeTeacher.id);
-      return isHome || isDelegated;
-    });
-    return allowed.length > 0 ? allowed : SCHOOL_19_CLASSES;
-  }, [userCapabilities, activeTeacher, classPermissions, activeMainTab]);
+    if (!activeTeacher && !userCapabilities.isSystemManager) return [];
+    return SCHOOL_19_CLASSES;
+  }, [userCapabilities, activeTeacher]);
 
   // Auto-select and lock regular teacher to their authorized class when logging in or when permissions change
   useEffect(() => {
