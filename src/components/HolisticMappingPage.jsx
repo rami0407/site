@@ -229,12 +229,11 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     return () => unsub();
   }, [isAdminEmbed]);
 
-  // Helper to apply incoming cloud config (timestamp-guarded so Coordinator Jihan's edits are never overwritten by stale docs)
+  // Helper to apply incoming cloud config from authoritative shared channel (immune to client clock skew!)
   const applyIncomingCloudConfig = (data) => {
     if (!data || typeof data !== 'object') return false;
-    const incomingMs = data.updatedMs || (data.updatedAt ? Date.parse(data.updatedAt) : 0) || 1;
-    if (incomingMs < configUpdatedMsRef.current) return false;
-    configUpdatedMsRef.current = incomingMs;
+    const incomingMs = data.updatedMs || (data.updatedAt ? Date.parse(data.updatedAt) : 0) || Date.now();
+    configUpdatedMsRef.current = Math.max(configUpdatedMsRef.current, incomingMs);
 
     if (data.academicYears) setAcademicYears(data.academicYears);
     if (data.holisticColumns) setHolisticColumns(data.holisticColumns);
@@ -302,7 +301,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
 
     const unsubs = [];
     try {
-      // Primary live channel in 'students' collection (open to all teachers & principal in live Firestore rules)
+      // Primary live channel in 'students' collection (single authoritative source for ALL teachers, Jihan & Principal!)
       const sharedConfRef = doc(db, 'students', 'holistic_cfg_global_v2');
       unsubs.push(
         onSnapshot(
@@ -310,27 +309,6 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
           (snap) => {
             if (snap.exists()) {
               applyIncomingCloudConfig(snap.data());
-            }
-          },
-          () => {}
-        )
-      );
-
-      // Secondary channel in 'holistic_mapping_config' (auto-bridges to sharedConfRef ONLY if strictly newer)
-      const legacyConfRef = doc(db, 'holistic_mapping_config', 'global_settings_v2');
-      unsubs.push(
-        onSnapshot(
-          legacyConfRef,
-          (snap) => {
-            if (snap.exists()) {
-              const data = snap.data();
-              const incomingMs = data?.updatedMs || (data?.updatedAt ? Date.parse(data.updatedAt) : 0) || 0;
-              if (incomingMs > configUpdatedMsRef.current) {
-                const applied = applyIncomingCloudConfig(data);
-                if (applied) {
-                  setDoc(sharedConfRef, data, { merge: true }).catch(() => {});
-                }
-              }
             }
           },
           () => {}
@@ -409,11 +387,16 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
       const incomingMs = d.updatedMs || (d.updatedAt ? Date.parse(d.updatedAt) : 0) || 1;
       const currentMs = cloudUpdatedMsRef.current[key] || 0;
 
-      // Accept if it's the first cloud load or at least as new as our current cloud revision
-      if (!cloudLoadedKeysRef.current.has(key) || incomingMs >= currentMs) {
+      // Always accept live updates from the authoritative 'shared' channel (immune to device clock skew between Jihan/teachers and Principal!).
+      // Only gate legacy channel by timestamp.
+      const shouldAccept = sourceCollection === 'shared'
+        ? true
+        : (!cloudLoadedKeysRef.current.has(key) || incomingMs > currentMs);
+
+      if (shouldAccept) {
         cloudLoadedKeysRef.current.add(key);
         seededCloudKeysRef.current.add(key);
-        cloudUpdatedMsRef.current[key] = incomingMs;
+        cloudUpdatedMsRef.current[key] = Math.max(currentMs, incomingMs);
 
         setClassStudentsMap((prev) => {
           const localList = prev[key];
@@ -487,22 +470,6 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
       );
       unsubs.push(u);
     });
-
-    // 4. Also subscribe to 'holistic_mapping_classes' so any edits made while logged in as Firebase Admin are bridged live
-    try {
-      const qLegacy = collection(db, 'holistic_mapping_classes');
-      const uLegacy = onSnapshot(
-        qLegacy,
-        (snap) => {
-          if (!isMounted) return;
-          snap.forEach((docSnap) => {
-            applyIncomingClassDoc(docSnap.data(), 'legacy');
-          });
-        },
-        () => {}
-      );
-      unsubs.push(uLegacy);
-    } catch {}
 
     return () => {
       isMounted = false;
@@ -842,17 +809,10 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
         applyIncomingCloudConfig(confSnap.data());
       }
 
-      let bestDoc = null;
       const d1 = sharedSnap && sharedSnap.exists() ? sharedSnap.data() : null;
       const d2 = legacySnap && legacySnap.exists() ? legacySnap.data() : null;
-
-      if (d1 && d2) {
-        const ms1 = d1.updatedMs || (d1.updatedAt ? Date.parse(d1.updatedAt) : 0);
-        const ms2 = d2.updatedMs || (d2.updatedAt ? Date.parse(d2.updatedAt) : 0);
-        bestDoc = ms2 > ms1 ? d2 : d1;
-      } else {
-        bestDoc = d1 || d2;
-      }
+      // Primary 'students/holistic_cls_...' is ALWAYS the authoritative live source written by all teachers & Coordinator Jihan
+      const bestDoc = d1 || d2;
 
       if (bestDoc && Array.isArray(bestDoc.students) && bestDoc.students.length > 0) {
         cloudLoadedKeysRef.current.add(key);
