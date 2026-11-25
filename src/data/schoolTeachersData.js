@@ -793,5 +793,49 @@ export const defaultSchoolTeachers = [
         "endTime": "13:30"
       }
     ]
+  },
+  {
+    "id": "tch_37",
+    "nameHe": "רימאא אגבאריה",
+    "nameAr": "ريماء اغبارية",
+    "role": "معلمة",
+    "phone": "050-1234567",
+    "email": "teacher37@musheirifa.edu.hl",
+    "receptionSchedule": [
+      {
+        "day": "Sunday",
+        "dayAr": "الأحد",
+        "startTime": "08:30",
+        "endTime": "13:30"
+      },
+      {
+        "day": "Tuesday",
+        "dayAr": "الثلاثاء",
+        "startTime": "08:30",
+        "endTime": "13:30"
+      }
+    ]
+  },
+  {
+    "id": "tch_38",
+    "nameHe": "מלאק אגבאריה",
+    "nameAr": "ملاك اغبارية",
+    "role": "معلمة",
+    "phone": "050-1234567",
+    "email": "teacher38@musheirifa.edu.hl",
+    "receptionSchedule": [
+      {
+        "day": "Sunday",
+        "dayAr": "الأحد",
+        "startTime": "08:30",
+        "endTime": "13:30"
+      },
+      {
+        "day": "Tuesday",
+        "dayAr": "الثلاثاء",
+        "startTime": "08:30",
+        "endTime": "13:30"
+      }
+    ]
   }
 ];

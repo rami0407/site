@@ -44,7 +44,9 @@ export const DEFAULT_CUSTOM_TEACHER_PINS = {
   tch_33: '248917635',
   tch_34: '795340182',
   tch_35: '362789415',
-  tch_36: 'rami318212'
+  tch_36: 'rami318212',
+  tch_37: '628491053',
+  tch_38: '891357246'
 };
 const STORAGE_PREFIX = 'musherfe_tch_pin_';
 const ACTIVE_TEACHER_KEY = 'musherfe_active_teacher_session';
