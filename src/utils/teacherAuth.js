@@ -1,5 +1,6 @@
 import { defaultSchoolTeachers } from '../data/schoolTeachersData';
 import { db } from '../firebase';
+import { firestoreRestSaveDoc, firestoreRestGetDoc } from './firestoreRestSync';
 import { collection, doc, setDoc, getDoc, getDocs, onSnapshot, addDoc, updateDoc, deleteField } from 'firebase/firestore';
 import { generateBase32Secret, verifyTOTPCode } from './totp';
 import { setSecureStorage, getSecureStorage, removeSecureStorage, hashPin, verifyPinHash } from './cryptoVault';
@@ -132,6 +133,13 @@ export const initTeacherProfilesSync = () => {
   if (profilesListenerStarted) return;
   profilesListenerStarted = true;
   try {
+    firestoreRestGetDoc('students', 'teacher_profiles_v1').then((res) => {
+      if (res?.exists && res.data?.profiles) {
+        teacherProfilesCache = { ...teacherProfilesCache, ...res.data.profiles };
+        try { setSecureStorage(TEACHER_PROFILES_STORAGE_KEY, teacherProfilesCache); } catch {}
+        if (typeof window !== 'undefined') window.dispatchEvent(new Event('teacherProfileUpdated'));
+      }
+    }).catch(() => {});
     const sharedRef = doc(db, 'students', 'teacher_profiles_v1');
     onSnapshot(sharedRef, (snap) => {
       if (snap.exists()) {
@@ -211,14 +219,18 @@ export const saveTeacherProfile = async (teacherId, profileFields = {}) => {
   }
 
   try {
-    // Primary shared channel readable & writable across the whole site
-    await setDoc(
-      doc(db, 'students', 'teacher_profiles_v1'),
-      { profiles: { [teacherId]: nextProfile }, updatedAt: nowIso },
-      { merge: true }
-    );
-    // Mirror to dedicated teacher_profiles collection if permitted
-    setDoc(doc(db, 'teacher_profiles', teacherId), nextProfile, { merge: true }).catch(() => {});
+    // Fetch latest cloud profiles map first so concurrent teacher profile edits merge cleanly
+    const latestCloud = await firestoreRestGetDoc('students', 'teacher_profiles_v1').catch(() => null);
+    const mergedAllProfiles = {
+      ...(latestCloud?.data?.profiles || {}),
+      ...teacherProfilesCache,
+      [teacherId]: nextProfile
+    };
+    teacherProfilesCache = mergedAllProfiles;
+    await firestoreRestSaveDoc('students', 'teacher_profiles_v1', {
+      profiles: mergedAllProfiles,
+      updatedAt: nowIso
+    });
     return { success: true, profile: updatedFull || nextProfile };
   } catch (err) {
     console.warn('Teacher profile cloud save note:', err);

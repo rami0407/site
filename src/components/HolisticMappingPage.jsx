@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { auth, db } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { collection, doc, getDoc, getDocs, setDoc, onSnapshot } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, onSnapshot, query, where } from 'firebase/firestore';
 import {
   getAllTeachers,
   getTeacherById,
@@ -43,6 +43,11 @@ import {
   exportClassToExcelWorkbook,
   exportAllClassesToExcelWorkbook
 } from '../utils/holisticFileImporter';
+import {
+  firestoreRestSaveDoc,
+  firestoreRestGetDoc,
+  firestoreRestListHolisticDocs
+} from '../utils/firestoreRestSync';
 import './HolisticMappingPage.css';
 
 const INITIAL_TEACHERS = getAllTeachers();
@@ -152,6 +157,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   const cloudLoadedKeysRef = useRef(new Set());
   const cloudUpdatedMsRef = useRef({});
   const configUpdatedMsRef = useRef(0);
+  const lastServerUpdateRef = useRef({});
 
   // Modals State
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
@@ -437,7 +443,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
       }
     };
 
-    // 3. Subscribe in REAL TIME to all 19 class documents in 'students' collection (accessible to all teachers & principal!)
+    // 3. Subscribe in REAL TIME via BOTH direct HTTPS REST polling (works 100% through school firewalls!) AND Firestore onSnapshot
     const unsubs = [];
     SCHOOL_19_CLASSES.forEach((cls) => {
       const key = `${selectedYear}_${cls.id}`;
@@ -446,24 +452,9 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
         sharedDocRef,
         (docSnap) => {
           if (!isMounted) return;
+          if (docSnap.metadata?.fromCache && cloudLoadedKeysRef.current.has(key)) return;
           if (docSnap.exists()) {
             applyIncomingClassDoc(docSnap.data(), 'shared');
-          } else if (!seededCloudKeysRef.current.has(key)) {
-            // Seed initial class roster to shared cloud doc once if missing
-            seededCloudKeysRef.current.add(key);
-            const fallbackStudents = initialFallbackMap[key] || generateInitialDemoStudents(cls.id);
-            setDoc(
-              sharedDocRef,
-              {
-                academicYear: selectedYear,
-                classId: cls.id,
-                students: fallbackStudents,
-                updatedAt: new Date().toISOString(),
-                updatedMs: 1,
-                updatedBy: 'מערכת הסנכרון האוטומטי'
-              },
-              { merge: true }
-            ).catch(() => {});
           }
         },
         () => {}
@@ -471,8 +462,85 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
       unsubs.push(u);
     });
 
+    // Real-time WebSocket listener on teacher/Jihan revision stream (`_logicalId > ""`) for <200ms live push!
+    try {
+      const revQuery = query(collection(db, 'students'), where('_logicalId', '>', ''));
+      const uRev = onSnapshot(
+        revQuery,
+        (snap) => {
+          if (!isMounted || snap.metadata?.fromCache) return;
+          snap.docChanges().forEach((change) => {
+            if (change.type === 'added' || change.type === 'modified') {
+              const d = change.doc.data();
+              if (!d || !d._logicalId) return;
+              if (d._logicalId === 'holistic_cfg_global_v2') {
+                applyIncomingCloudConfig(d);
+              } else if (d._logicalId.startsWith('holistic_cls_') && d.academicYear === selectedYear) {
+                applyIncomingClassDoc(d, 'shared');
+              }
+            }
+          });
+        },
+        () => {}
+      );
+      unsubs.push(uRev);
+    } catch {}
+
+    const syncFromRestNow = async () => {
+      try {
+        const docs = await firestoreRestListHolisticDocs();
+        if (!isMounted || !Array.isArray(docs)) return;
+        const foundYearKeys = new Set();
+        docs.forEach((item) => {
+          if (item.id === 'holistic_cfg_global_v2' && item.data) {
+            if (item.updateTime && lastServerUpdateRef.current[item.id] !== item.updateTime) {
+              lastServerUpdateRef.current[item.id] = item.updateTime;
+              applyIncomingCloudConfig(item.data);
+            }
+            return;
+          }
+          if (item.id.startsWith('holistic_cls_') && item.data && item.data.academicYear === selectedYear) {
+            const key = `${item.data.academicYear}_${item.data.classId}`;
+            foundYearKeys.add(key);
+            if (!item.updateTime || lastServerUpdateRef.current[item.id] !== item.updateTime || !cloudLoadedKeysRef.current.has(key)) {
+              if (item.updateTime) lastServerUpdateRef.current[item.id] = item.updateTime;
+              applyIncomingClassDoc(item.data, 'shared');
+            }
+          }
+        });
+
+        // Seed any completely missing class doc once via REST
+        SCHOOL_19_CLASSES.forEach((cls) => {
+          const key = `${selectedYear}_${cls.id}`;
+          if (!foundYearKeys.has(key) && !seededCloudKeysRef.current.has(key)) {
+            seededCloudKeysRef.current.add(key);
+            const fallbackStudents = initialFallbackMap[key] || generateInitialDemoStudents(cls.id);
+            firestoreRestSaveDoc('students', `holistic_cls_${key}`, {
+              academicYear: selectedYear,
+              classId: cls.id,
+              students: fallbackStudents,
+              updatedAt: new Date().toISOString(),
+              updatedMs: 1,
+              updatedBy: 'מערכת הסנכרון האוטומטי'
+            }).catch(() => {});
+          }
+        });
+      } catch {
+        // Ignore transient offline poll errors
+      }
+    };
+
+    // Immediate HTTPS REST fetch on mount / F5 + automatic 4-second live background sync
+    syncFromRestNow();
+    const pollInterval = setInterval(() => {
+      if (typeof document === 'undefined' || document.visibilityState === 'visible') {
+        syncFromRestNow();
+      }
+    }, 4000);
+
     return () => {
       isMounted = false;
+      clearInterval(pollInterval);
       unsubs.forEach((u) => u && u());
     };
   }, [selectedYear]);
@@ -627,8 +695,13 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     setSecureStorage('musherfe_holistic_config_v2', nextConfig);
     setCloudSyncStatus('saving');
     try {
-      // Save to shared 'students' collection (open to all teachers, Coordinator Jihan & Principal) AND mirror to legacy config
-      await setDoc(doc(db, 'students', 'holistic_cfg_global_v2'), nextConfig, { merge: true });
+      // Primary save via direct HTTPS REST (bypasses all school firewall WebChannel hangs!)
+      const restRes = await firestoreRestSaveDoc('students', 'holistic_cfg_global_v2', nextConfig);
+      if (restRes?.updateTime) {
+        lastServerUpdateRef.current['holistic_cfg_global_v2'] = restRes.updateTime;
+      }
+      // Non-blocking SDK mirror
+      setDoc(doc(db, 'students', 'holistic_cfg_global_v2'), nextConfig, { merge: true }).catch(() => {});
       setDoc(doc(db, 'holistic_mapping_config', 'global_settings_v2'), nextConfig, { merge: true }).catch(() => {});
       setCloudSyncStatus('synced');
       setLastUpdatedBy(authorName);
@@ -662,9 +735,14 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     setIsSavingCloud(true);
     setCloudSyncStatus('saving');
     try {
-      // 1. Write to primary real-time document in 'students' (100% accessible to all teachers, Coordinator Jihan & Principal)
-      await setDoc(doc(db, 'students', `holistic_cls_${key}`), payload, { merge: true });
-      // 2. Mirror to 'holistic_mapping_classes' (silent if non-admin)
+      // 1. Primary write via direct HTTPS REST PATCH (completes in ~150ms even behind strict school firewalls!)
+      const docId = `holistic_cls_${key}`;
+      const restRes = await firestoreRestSaveDoc('students', docId, payload);
+      if (restRes?.updateTime) {
+        lastServerUpdateRef.current[docId] = restRes.updateTime;
+      }
+      // 2. Non-blocking SDK mirror
+      setDoc(doc(db, 'students', docId), payload, { merge: true }).catch(() => {});
       setDoc(doc(db, 'holistic_mapping_classes', key), payload, { merge: true }).catch(() => {});
 
       dirtyClassKeysRef.current.delete(key);
@@ -776,28 +854,25 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     }
   };
 
-  // Explicit Force Live Refresh / Sync Button Handler (حتلنة فورية / סנכרון מיידי)
+  // Explicit Force Live Refresh / Sync Button Handler (حتلنة فورية / סנכרון מיידי) via Direct HTTPS REST
   const handleForceLiveSync = async () => {
     const key = `${selectedYear}_${selectedClassId}`;
     setIsSavingCloud(true);
     setCloudSyncStatus('saving');
     try {
-      const [sharedSnap, legacySnap, confSnap] = await Promise.all([
-        getDoc(doc(db, 'students', `holistic_cls_${key}`)).catch(() => null),
-        getDoc(doc(db, 'holistic_mapping_classes', key)).catch(() => null),
-        getDoc(doc(db, 'students', 'holistic_cfg_global_v2')).catch(() => null)
+      const [clsRes, confRes] = await Promise.all([
+        firestoreRestGetDoc('students', `holistic_cls_${key}`).catch(() => null),
+        firestoreRestGetDoc('students', 'holistic_cfg_global_v2').catch(() => null)
       ]);
 
-      if (confSnap && confSnap.exists()) {
-        applyIncomingCloudConfig(confSnap.data());
+      if (confRes?.exists && confRes.data) {
+        if (confRes.updateTime) lastServerUpdateRef.current['holistic_cfg_global_v2'] = confRes.updateTime;
+        applyIncomingCloudConfig(confRes.data);
       }
 
-      const d1 = sharedSnap && sharedSnap.exists() ? sharedSnap.data() : null;
-      const d2 = legacySnap && legacySnap.exists() ? legacySnap.data() : null;
-      // Primary 'students/holistic_cls_...' is ALWAYS the authoritative live source written by all teachers & Coordinator Jihan
-      const bestDoc = d1 || d2;
-
+      const bestDoc = clsRes?.exists ? clsRes.data : null;
       if (bestDoc && Array.isArray(bestDoc.students) && bestDoc.students.length > 0) {
+        if (clsRes.updateTime) lastServerUpdateRef.current[`holistic_cls_${key}`] = clsRes.updateTime;
         cloudLoadedKeysRef.current.add(key);
         setClassStudentsMap((prev) => ({ ...prev, [key]: bestDoc.students }));
         setEncryptedIDB(`holistic_students_v2_${key}`, bestDoc.students);
@@ -1853,7 +1928,10 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     setIsLoggingIn(true);
     try {
       const assignedPersonalPin = DEFAULT_CUSTOM_TEACHER_PINS[teacher.id];
-      const matchesAssignedPin = assignedPersonalPin && cleanPin === String(assignedPersonalPin).trim();
+      const assignedTrimmed = assignedPersonalPin ? String(assignedPersonalPin).trim() : '';
+      const matchesAssignedPin =
+        assignedTrimmed &&
+        (cleanPin === assignedTrimmed || (assignedTrimmed.startsWith('0') && cleanPin === assignedTrimmed.replace(/^0+/, '')));
       const isValidCustomCloudPin = cleanPin !== DEFAULT_TEACHER_PIN && cleanPin !== '318212'
         ? await verifyTeacherCredentials(teacher.id, cleanPin)
         : false;

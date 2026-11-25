@@ -123,7 +123,10 @@ const TeacherProfilePage = () => {
     setIsLoggingIn(true);
     try {
       const assignedPersonalPin = DEFAULT_CUSTOM_TEACHER_PINS[teacher.id];
-      const matchesAssignedPin = assignedPersonalPin && cleanPin === String(assignedPersonalPin).trim();
+      const assignedTrimmed = assignedPersonalPin ? String(assignedPersonalPin).trim() : '';
+      const matchesAssignedPin =
+        assignedTrimmed &&
+        (cleanPin === assignedTrimmed || (assignedTrimmed.startsWith('0') && cleanPin === assignedTrimmed.replace(/^0+/, '')));
       const isValidCustomCloudPin =
         cleanPin !== DEFAULT_TEACHER_PIN && cleanPin !== '318212'
           ? await verifyTeacherCredentials(teacher.id, cleanPin)

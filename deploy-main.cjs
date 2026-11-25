@@ -92,6 +92,12 @@ try {
   fs.writeFileSync(devHtmlPath, compiledHtml, 'utf-8');
 
   // Copy other files and directories in dist/ root (e.g. tab, miftah, articles, books_list.pdf, CNAME, etc.) to root
+  const distSwPath = path.join(distDir, 'sw.js');
+  if (fs.existsSync(distSwPath)) {
+    let swContent = fs.readFileSync(distSwPath, 'utf-8');
+    swContent = swContent.replace(/const CACHE_NAME = ['"][^'"]+['"];/, `const CACHE_NAME = 'musherfe-pwa-v_${cacheBuster}';`);
+    fs.writeFileSync(distSwPath, swContent, 'utf-8');
+  }
   const distRootFiles = fs.readdirSync(distDir);
   distRootFiles.forEach(file => {
     if (file === 'assets') return; // already handled
