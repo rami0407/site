@@ -611,7 +611,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     const nowMs = Date.now();
     const authorName = activeTeacher?.nameHe || activeTeacher?.nameAr || 'מנהל';
     configUpdatedMsRef.current = nowMs;
-    const nextConfig = {
+    const nextConfig = JSON.parse(JSON.stringify({
       academicYears,
       selectedYear,
       holisticColumns,
@@ -623,7 +623,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
       updatedAt: nowIso,
       updatedMs: nowMs,
       updatedBy: authorName
-    };
+    }));
     setSecureStorage('musherfe_holistic_config_v2', nextConfig);
     setCloudSyncStatus('saving');
     try {
@@ -634,8 +634,9 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
       setLastUpdatedBy(authorName);
       setLastSavedAt(new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     } catch (e) {
-      console.warn('Cloud config save fallback to encrypted local vault:', e);
+      console.warn('Cloud config save error:', e);
       setCloudSyncStatus('local_vault');
+      triggerToast(`⚠️ שגיאה בשמירת ההגדרות לענן: ${e?.message || 'בדוק חיבור אינטרנט'}`);
     }
   };
 
@@ -648,21 +649,22 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     cloudLoadedKeysRef.current.add(key);
     cloudUpdatedMsRef.current[key] = nowMs;
 
-    const payload = {
+    // Strip any undefined fields so Firestore setDoc NEVER throws "Unsupported field value: undefined"
+    const payload = JSON.parse(JSON.stringify({
       academicYear: yearToSave,
       classId,
       students: studentsToPush,
       updatedAt: nowIso,
       updatedMs: nowMs,
       updatedBy: authorName
-    };
+    }));
 
     setIsSavingCloud(true);
     setCloudSyncStatus('saving');
     try {
-      // 1. Write to primary real-time document in 'students' (100% accessible to all homeroom teachers & principal)
+      // 1. Write to primary real-time document in 'students' (100% accessible to all teachers, Coordinator Jihan & Principal)
       await setDoc(doc(db, 'students', `holistic_cls_${key}`), payload, { merge: true });
-      // 2. Mirror to 'holistic_mapping_classes'
+      // 2. Mirror to 'holistic_mapping_classes' (silent if non-admin)
       setDoc(doc(db, 'holistic_mapping_classes', key), payload, { merge: true }).catch(() => {});
 
       dirtyClassKeysRef.current.delete(key);
@@ -676,6 +678,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     } catch (err) {
       console.warn('Cloud save error:', err);
       setCloudSyncStatus('local_vault');
+      triggerToast(`⚠️ שגיאת סנכרון לענן: ${err?.message || 'בדוק חיבור אינטרנט'}`);
       return false;
     } finally {
       setIsSavingCloud(false);

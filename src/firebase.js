@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 // Protected client configuration (encoded to prevent automated bot scanner alerts)
@@ -30,9 +30,12 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Services
+// Initialize Services (auto-detect long polling + disable fetch streams for Israeli school/filtered networks)
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+export const db = initializeFirestore(app, {
+  experimentalAutoDetectLongPolling: true,
+  useFetchStreams: false
+});
 export const storage = getStorage(app);
 
 // Configuration for standalone Emtnan App Firebase project (news-b3639)
