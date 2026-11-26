@@ -14,6 +14,7 @@ import {
   clearTabTeacherSession,
   syncCustomTeachersList,
   updateTeacherPin,
+  authenticateTeacherUnified,
   DEFAULT_TEACHER_PIN,
   DEFAULT_CUSTOM_TEACHER_PINS
 } from '../utils/teacherAuth';
@@ -2108,15 +2109,12 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
 
     setIsLoggingIn(true);
     try {
-      const assignedPersonalPin = DEFAULT_CUSTOM_TEACHER_PINS[teacher.id];
-      const assignedTrimmed = assignedPersonalPin ? String(assignedPersonalPin).trim() : '';
-      const matchesAssignedPin =
-        assignedTrimmed &&
-        (cleanPin === assignedTrimmed || (assignedTrimmed.startsWith('0') && cleanPin === assignedTrimmed.replace(/^0+/, '')));
-      const isValidCustomCloudPin = cleanPin !== DEFAULT_TEACHER_PIN && cleanPin !== '318212'
-        ? await verifyTeacherCredentials(teacher.id, cleanPin)
-        : false;
-      const allowedPin = matchesAssignedPin || isValidCustomCloudPin;
+      const authRes = await authenticateTeacherUnified({
+        teacherId: teacher.id,
+        pin: cleanPin,
+        name: teacher.nameAr || teacher.nameHe
+      });
+      const allowedPin = authRes.success;
 
       if (allowedPin) {
         const sessionObj = {

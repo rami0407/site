@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { getStudentSession, saveStudentSession } from '../utils/studentAuth';
+import { authenticateTeacherUnified, getTabTeacherSession } from '../utils/teacherAuth';
 import { sanitizeText } from '../utils/security';
 import TeacherResearchReviewPanel from './TeacherResearchReviewPanel';
 import './TeacherStemPortal.css';
@@ -14,7 +15,33 @@ const STAGE_OPTIONS = [
 ];
 
 const TeacherStemPortal = () => {
-  const [session, setSession] = useState(getStudentSession());
+  const getInitialTeacherSession = () => {
+    const stu = getStudentSession();
+    if (stu && (stu.role === 'teacher' || stu.role === 'principal' || stu.role === 'coordinator' || stu.studentClass?.includes('معلم'))) {
+      return stu;
+    }
+    const tabT = getTabTeacherSession();
+    if (tabT) {
+      return {
+        fullName: tabT.nameAr || tabT.nameHe,
+        idNumber: tabT.id,
+        studentClass: 'معلم في المدرسة 👨‍🏫',
+        role: 'teacher',
+        roleIcon: '👨‍🏫'
+      };
+    }
+    return null;
+  };
+
+  const [session, setSession] = useState(getInitialTeacherSession);
+
+  useEffect(() => {
+    const handleAuth = () => {
+      setSession(getInitialTeacherSession());
+    };
+    window.addEventListener('teacherAuthChanged', handleAuth);
+    return () => window.removeEventListener('teacherAuthChanged', handleAuth);
+  }, []);
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [activePortalTab, setActivePortalTab] = useState('research'); // 'research' | 'stem'
 
@@ -36,7 +63,7 @@ const TeacherStemPortal = () => {
   const [expandedLabId, setExpandedLabId] = useState(null);
 
   // Check session
-  const isTeacherLoggedIn = session && (session.role === 'teacher' || (session.studentClass && session.studentClass.includes('معلم')));
+  const isTeacherLoggedIn = session && (session.role === 'teacher' || session.role === 'principal' || session.role === 'coordinator' || (session.studentClass && session.studentClass.includes('معلم')));
 
   useEffect(() => {
     const fetchSolutions = async () => {
@@ -136,71 +163,81 @@ const TeacherStemPortal = () => {
     const cleanName = teacherNameInput.trim();
     const cleanId = teacherIdInput.trim();
 
-    if (cleanName.split(/\s+/).length < 2) {
-      setAuthError('⚠️ يرجى إدخال اسم المعلم كاملاً (الاسم الأول واسم العائلة على الأقل).');
-      return;
-    }
-
-    if (!/^\d{9}$/.test(cleanId)) {
-      setAuthError('⚠️ رمز الدخول يجب أن يكون المكون من 9 أرقام (رقم الهوية أو الرمز المفوض).');
+    if (!cleanId) {
+      setAuthError('⚠️ يرجى إدخال رمز الدخول المعتمد الخاص بك.');
       return;
     }
 
     setIsSubmitting(true);
 
-    // Fetch requests list and school_teachers list to verify approval status
-    let requestsList = [];
-    let schoolTeachersList = [];
-
     try {
-      const snapReqs = await getDocs(collection(db, 'stem_teacher_requests'));
-      if (!snapReqs.empty) {
-        snapReqs.forEach(d => requestsList.push({ id: d.id, ...d.data() }));
+      // 1. Unified Teacher Authentication (Official School Teachers & Custom PINs)
+      const authResult = await authenticateTeacherUnified({
+        name: cleanName,
+        pin: cleanId
+      });
+
+      if (authResult.success) {
+        setIsSubmitting(false);
+        setSession(authResult.session);
+        setTeacherNameInput('');
+        setTeacherIdInput('');
+        return;
       }
-      const snapTeachers = await getDocs(collection(db, 'school_teachers'));
-      if (!snapTeachers.empty) {
-        snapTeachers.forEach(d => schoolTeachersList.push({ id: d.id, ...d.data() }));
+
+      // 2. Fallback: Check stem_teacher_requests for substitute or external teachers
+      let requestsList = [];
+      let schoolTeachersList = [];
+
+      try {
+        const snapReqs = await getDocs(collection(db, 'stem_teacher_requests'));
+        if (!snapReqs.empty) {
+          snapReqs.forEach(d => requestsList.push({ id: d.id, ...d.data() }));
+        }
+        const snapTeachers = await getDocs(collection(db, 'school_teachers'));
+        if (!snapTeachers.empty) {
+          snapTeachers.forEach(d => schoolTeachersList.push({ id: d.id, ...d.data() }));
+        }
+      } catch (e) {}
+
+      const localReqs = JSON.parse(localStorage.getItem('stem_local_teacher_requests') || '[]');
+      const combinedReqs = [...requestsList, ...localReqs];
+
+      const approvedReq = combinedReqs.find(r => (r.teacherId === cleanId || r.id === `req_${cleanId}`) && r.status === 'approved');
+      const pendingReq = combinedReqs.find(r => (r.teacherId === cleanId || r.id === `req_${cleanId}`) && r.status === 'pending');
+      const rejectedReq = combinedReqs.find(r => (r.teacherId === cleanId || r.id === `req_${cleanId}`) && r.status === 'rejected');
+      const isKnownSchoolTeacher = schoolTeachersList.some(t => t.id === cleanId || t.phone === cleanId || t.id === `tch_${cleanId}`);
+
+      setIsSubmitting(false);
+
+      if (pendingReq) {
+        setAuthError('⏳ طلب اعتمادك كمعلم موضوع لا يزال (قيد الانتظار لموافقة مدير المدرسة). يرجى مراجعة إدارة المدرسة لتفعيل حسابك.');
+        return;
       }
-    } catch (e) {}
 
-    const localReqs = JSON.parse(localStorage.getItem('stem_local_teacher_requests') || '[]');
-    const combinedReqs = [...requestsList, ...localReqs];
+      if (rejectedReq) {
+        setAuthError('❌ عفواً، هذا الطلب غير معتمد من قبل إدارة المدرسة. يرجى التواصل مع المدير.');
+        return;
+      }
 
-    // Check 1: Is there an approved request in stem_teacher_requests?
-    const approvedReq = combinedReqs.find(r => (r.teacherId === cleanId || r.id === `req_${cleanId}`) && r.status === 'approved');
-    const pendingReq = combinedReqs.find(r => (r.teacherId === cleanId || r.id === `req_${cleanId}`) && r.status === 'pending');
-    const rejectedReq = combinedReqs.find(r => (r.teacherId === cleanId || r.id === `req_${cleanId}`) && r.status === 'rejected');
+      if (approvedReq || isKnownSchoolTeacher) {
+        const newSession = saveStudentSession({
+          fullName: approvedReq ? approvedReq.teacherName : cleanName,
+          idNumber: cleanId,
+          studentClass: 'معلم في المدرسة 👨‍🏫',
+          role: 'teacher',
+          roleIcon: '👨‍🏫'
+        });
+        setSession(newSession);
+        return;
+      }
 
-    // Check 2: Is teacher in school_teachers database list?
-    const isKnownSchoolTeacher = schoolTeachersList.some(t => t.id === cleanId || t.phone === cleanId || t.id === `tch_${cleanId}`);
-
-    setIsSubmitting(false);
-
-    if (pendingReq) {
-      setAuthError('⏳ طلب اعتمادك كمعلم موضوع لا يزال (قيد الانتظار لموافقة مدير المدرسة). يرجى مراجعة إدارة المدرسة لتأشير وتفعيل حسابك.');
-      return;
+      setAuthError(`⛔ عذراً، رقم الهوية/الرمز (${cleanId}) غير معتمد في المنظومة حتى الآن!\nيرجى التأكد من الرمز الخاص بك (رمز المعلم المعتمد)، أو التبديل لتبويب "📝 إرسال طلب اعتماد جديد للمدير" بالأعلى لإرسال طلبك أولاً.`);
+    } catch (err) {
+      console.error('Teacher login error:', err);
+      setIsSubmitting(false);
+      setAuthError('⚠️ حدث خطأ أثناء التحقق، يرجى المحاولة مرة أخرى.');
     }
-
-    if (rejectedReq) {
-      setAuthError('❌ عفواً، هذا الطلب غير معتمد من قبل إدارة المدرسة. يرجى التواصل مع المدير.');
-      return;
-    }
-
-    if (!approvedReq && !isKnownSchoolTeacher) {
-      setAuthError(`⛔ عذراً، رقم الهوية/الرمز (${cleanId}) غير معتمد في المنظومة حتى الآن!\nيرجى التبديل لتبويب "📝 إرسال طلب اعتماد جديد للمدير" بالأعلى لإرسال طلبك أولاً حتى يعتمده المدير.`);
-      return;
-    }
-
-    // Access granted!
-    const newSession = saveStudentSession({
-      fullName: approvedReq ? approvedReq.teacherName : cleanName,
-      idNumber: cleanId,
-      studentClass: 'معلم في المدرسة 👨‍🏫',
-      role: 'teacher',
-      roleIcon: '👨‍🏫'
-    });
-
-    setSession(newSession);
   };
 
   // Save Feedback & Update Stage

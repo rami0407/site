@@ -1,6 +1,7 @@
 import { findStudentByRosterId, normalizeRosterId, SCHOOL_CLASSES_LIST, normalizeClassToDropdownValue } from '../data/schoolStudentsRoster';
 import React, { useState, useEffect } from 'react';
 import { getStudentSession, saveStudentSession } from '../utils/studentAuth';
+import { authenticateTeacherUnified, findTeacherByPin } from '../utils/teacherAuth';
 import { sanitizeText } from '../utils/security';
 import './StudentAuthModal.css';
 
@@ -11,6 +12,7 @@ const StudentAuthModal = ({ isOpen, onClose, onSuccess }) => {
   const [studentClass, setStudentClass] = useState(normalizeClassToDropdownValue(currentSession?.studentClass || 'الصف الثالث (أ)'));
   const [errorMsg, setErrorMsg] = useState('');
   const [matchedRosterStudent, setMatchedRosterStudent] = useState(null);
+  const [matchedTeacher, setMatchedTeacher] = useState(null);
 
   const handleIdChange = (val) => {
     const raw = val.replace(/\D/g, '');
@@ -50,7 +52,7 @@ const StudentAuthModal = ({ isOpen, onClose, onSuccess }) => {
   const isVisitor = studentClass.includes('زائر');
   const isTeacher = studentClass.includes('معلم');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
 
@@ -62,6 +64,28 @@ const StudentAuthModal = ({ isOpen, onClose, onSuccess }) => {
     let finalStudentName = cleanName;
     if (matchFromRoster && (!finalStudentName || finalStudentName.length < 2)) {
       finalStudentName = matchFromRoster.studentName;
+    }
+
+    // Unified Teacher Login
+    const isTeacherRole = isTeacher || cleanId === '318212' || !!findTeacherByPin(cleanId) || !!matchedTeacher;
+    if (isTeacherRole) {
+      const authRes = await authenticateTeacherUnified({
+        name: cleanName,
+        pin: cleanId
+      });
+      if (authRes.success) {
+        if (onSuccess) onSuccess(authRes.session);
+        if (onClose) onClose();
+        if (authRes.systemRole === 'coordinator' || authRes.teacher?.id === 'tch_17') {
+          window.location.hash = '#/appointments';
+        } else {
+          window.location.hash = '#/stem-teacher';
+        }
+        return;
+      } else if (isTeacher) {
+        setErrorMsg(authRes.error || '⚠️ رمز الدخول غير معتمد في سجل المعلمين.');
+        return;
+      }
     }
 
     // Validate name (at least 2 words unless matched in official school roster)
@@ -179,6 +203,12 @@ const StudentAuthModal = ({ isOpen, onClose, onSuccess }) => {
               autoFocus
               style={{ fontSize: '1.1rem', letterSpacing: '1px', fontWeight: 800 }}
             />
+            {matchedTeacher && (
+              <div style={{ marginTop: '8px', padding: '8px 12px', background: 'rgba(59, 130, 246, 0.15)', border: '1px solid #3b82f6', borderRadius: '8px', color: '#60a5fa', fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <i className="fas fa-chalkboard-teacher" style={{ color: '#3b82f6' }}></i>
+                <span>تم التعرف عليك: <strong>{matchedTeacher.nameAr || matchedTeacher.nameHe}</strong> 👨‍🏫 (معلم/ة معتمد/ة في مدرسة مشيرفة)</span>
+              </div>
+            )}
             {matchedRosterStudent && (
               <div style={{ marginTop: '8px', padding: '8px 12px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', borderRadius: '8px', color: '#34d399', fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <i className="fas fa-check-circle" style={{ color: '#10b981' }}></i>

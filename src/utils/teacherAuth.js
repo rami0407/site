@@ -1,10 +1,11 @@
-import { defaultSchoolTeachers } from '../data/schoolTeachersData';
+import { defaultSchoolTeachers } from '../data/schoolTeachersData.js';
 import { db } from '../firebase';
 import { firestoreRestSaveDoc, firestoreRestGetDoc } from './firestoreRestSync';
 import { collection, doc, setDoc, getDoc, getDocs, onSnapshot, addDoc, updateDoc, deleteField } from 'firebase/firestore';
 import { generateBase32Secret, verifyTOTPCode } from './totp';
 import { setSecureStorage, getSecureStorage, removeSecureStorage, hashPin, verifyPinHash } from './cryptoVault';
 import { checkRateLimit, recordFailedAttempt, resetRateLimit, logSecurityEvent } from './securityAudit';
+import { saveStudentSession } from './studentAuth';
 
 export const DEFAULT_TEACHER_PIN = '318212';
 export const COORDINATOR_TEACHER_PIN = '031693872';
@@ -522,7 +523,7 @@ export const verifyTeacherCredentials = async (teacherId, enteredPin) => {
   // 2. Default unified password for all school teachers (318212)
   if (!isValid) {
     const expectedDefaultPin = DEFAULT_CUSTOM_TEACHER_PINS[teacherId] || DEFAULT_TEACHER_PIN;
-    if (cleanEntered === expectedDefaultPin) {
+    if (cleanEntered === expectedDefaultPin || cleanEntered === DEFAULT_TEACHER_PIN || cleanEntered === '318212' || cleanEntered === PRINCIPAL_MASTER_PIN) {
       isValid = true;
     } else {
       const defaultHash = await hashPin(DEFAULT_TEACHER_PIN, teacherId);
@@ -1036,4 +1037,189 @@ export const isCoordinatorTeacher = (teacher) => {
 export const verifyCoordinatorPin = (enteredPin) => {
   const clean = (enteredPin || '').trim();
   return clean === COORDINATOR_TEACHER_PIN || clean === DEFAULT_TEACHER_PIN;
+};
+
+
+/**
+ * Find teacher by PIN across DEFAULT_CUSTOM_TEACHER_PINS, cloud accounts, coordinator, or principal
+ */
+export const findTeacherByPin = (pin) => {
+  if (!pin) return null;
+  const clean = String(pin).trim();
+  const all = getAllTeachers();
+
+  // 1. Direct match in DEFAULT_CUSTOM_TEACHER_PINS
+  for (const [tId, pVal] of Object.entries(DEFAULT_CUSTOM_TEACHER_PINS)) {
+    const pStr = String(pVal).trim();
+    if (clean === pStr || (pStr.startsWith('0') && clean === pStr.replace(/^0+/, ''))) {
+      const match = all.find(t => t.id === tId);
+      if (match) return match;
+    }
+  }
+
+  // 2. Direct match in cloud accounts cache
+  for (const [tId, acc] of Object.entries(cloudAccountsCache)) {
+    if (acc && acc.pin && String(acc.pin).trim() === clean) {
+      const match = all.find(t => t.id === tId);
+      if (match) return match;
+    }
+  }
+
+  // 3. Principal Master PIN
+  if (clean === PRINCIPAL_MASTER_PIN) {
+    return all.find(t => t.id === 'tch_36') || {
+      id: 'tch_36',
+      nameAr: 'رامي ارفاعية',
+      nameHe: 'ארפאעיה ראמי',
+      role: 'مدير المدرسة'
+    };
+  }
+
+  // 4. Coordinator PIN
+  if (clean === COORDINATOR_TEACHER_PIN) {
+    return all.find(t => t.id === 'tch_17') || {
+      id: 'tch_17',
+      nameAr: 'عتاب بيدوسي',
+      nameHe: 'עתאב בידוסי',
+      role: 'المركزة التربوية'
+    };
+  }
+
+  return null;
+};
+
+/**
+ * Unified teacher authentication function across the entire website
+ * Supports:
+ * - Direct 9-digit personal PIN (e.g. 916482375 for Sondos Mwasi, etc.)
+ * - Teacher name (Arabic or Hebrew) with their PIN or default PIN 318212
+ * - Teacher ID (tch_1 .. tch_36) with PIN
+ * - General teacher PIN (318212)
+ * - Master principal PIN (rami318212)
+ * Automatically syncs both tab teacher session and unified site student session.
+ */
+export const authenticateTeacherUnified = async ({ name = '', pin = '', teacherId = '' }) => {
+  const cleanPin = String(pin || '').trim();
+  const cleanName = String(name || '').trim();
+
+  if (!cleanPin) {
+    return { success: false, error: 'يرجى إدخال رمز الدخول الخاص بالمعلم.' };
+  }
+
+  const allTeachers = getAllTeachers();
+  let matchedTeacher = null;
+
+  // 1. Try finding teacher by PIN directly (e.g. 916482375 for Sondos Mwasi)
+  matchedTeacher = findTeacherByPin(cleanPin);
+
+  // 2. If teacherId is explicitly provided (e.g., from dropdown selection or direct parameter)
+  if (!matchedTeacher && teacherId) {
+    const tCandidate = allTeachers.find(t => t.id === teacherId);
+    if (tCandidate) {
+      const isOk = await verifyTeacherCredentials(teacherId, cleanPin);
+      if (isOk) {
+        matchedTeacher = tCandidate;
+      }
+    }
+  }
+
+  // 3. If teacher wasn't found by PIN, but name was provided, search by Name
+  if (!matchedTeacher && cleanName && cleanName.length >= 2) {
+    const norm = cleanName.toLowerCase().replace(/^(أ|إ|آ)/, 'ا');
+    const byName = allTeachers.find(t => {
+      const ar = (t.nameAr || '').toLowerCase().replace(/^(أ|إ|آ)/, 'ا');
+      const he = (t.nameHe || '').toLowerCase();
+      return ar.includes(norm) || norm.includes(ar) || he.includes(cleanName.toLowerCase()) || cleanName.toLowerCase().includes(he);
+    });
+
+    if (byName) {
+      const isOk = await verifyTeacherCredentials(byName.id, cleanPin);
+      if (isOk) {
+        matchedTeacher = byName;
+      }
+    }
+  }
+
+  // 4. If PIN is DEFAULT_TEACHER_PIN ('318212') and name was provided
+  if (!matchedTeacher && (cleanPin === DEFAULT_TEACHER_PIN || cleanPin === '318212')) {
+    if (cleanName) {
+      const norm = cleanName.toLowerCase().replace(/^(أ|إ|آ)/, 'ا');
+      const byName = allTeachers.find(t => {
+        const ar = (t.nameAr || '').toLowerCase().replace(/^(أ|إ|آ)/, 'ا');
+        const he = (t.nameHe || '').toLowerCase();
+        return ar.includes(norm) || norm.includes(ar) || he.includes(cleanName.toLowerCase());
+      });
+      if (byName) matchedTeacher = byName;
+    }
+  }
+
+  if (!matchedTeacher) {
+    return {
+      success: false,
+      error: '⛔ عذراً، رمز الدخول المدخل (' + cleanPin + ') غير معتمد في سجل المعلمين! يرجى التأكد من الرمز الخاص بك أو استخدام الرمز المعتمد.'
+    };
+  }
+
+  // Role detection
+  const systemRole =
+    matchedTeacher.id === 'tch_36'
+      ? 'principal'
+      : (matchedTeacher.id === 'tch_17' || isCoordinatorTeacher(matchedTeacher))
+      ? 'coordinator'
+      : matchedTeacher.id === 'tch_2'
+      ? 'eval_coord'
+      : 'homeroom_teacher';
+
+  const teacherSession = {
+    ...matchedTeacher,
+    systemRole,
+    loggedInAt: new Date().toISOString()
+  };
+
+  // 1. Save Tab / Profile session
+  setTabTeacherSession(teacherSession);
+
+  // 2. Save unified site studentSession (so STEM, Navbars, Vault know they are teacher)
+  const unifiedSession = saveStudentSession({
+    fullName: matchedTeacher.nameAr || matchedTeacher.nameHe,
+    idNumber: cleanPin,
+    studentClass: 'معلم في المدرسة 👨‍🏫',
+    role: systemRole === 'principal' ? 'principal' : systemRole === 'coordinator' ? 'coordinator' : 'teacher',
+    roleIcon: systemRole === 'coordinator' ? '👩‍🏫' : '👨‍🏫'
+  });
+
+  // 3. Coordinator extra session sync
+  if (systemRole === 'coordinator' || matchedTeacher.id === 'tch_17') {
+    try {
+      localStorage.setItem('musherfe_coordinator_session', JSON.stringify({
+        id: 'tch_17',
+        nameAr: matchedTeacher.nameAr || 'عتاب بيدوسي',
+        nameHe: matchedTeacher.nameHe || 'עתאב בידוסי',
+        role: 'المركزة التربوية',
+        isCoordinator: true,
+        pin: cleanPin,
+        loggedInAt: new Date().toISOString()
+      }));
+      localStorage.setItem('musherfe_gantt_teacher', JSON.stringify({
+        id: 't2',
+        nameHe: matchedTeacher.nameHe || 'עתאב בידוסי',
+        nameAr: matchedTeacher.nameAr || 'عتاب بيدوسي',
+        role: 'gantt_editor',
+        loggedInAt: new Date().toISOString()
+      }));
+    } catch (e) {}
+  }
+
+  // 4. Dispatch global events
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('teacherAuthChanged'));
+    window.dispatchEvent(new CustomEvent('musherfe_session_updated', { detail: unifiedSession }));
+  }
+
+  return {
+    success: true,
+    teacher: matchedTeacher,
+    session: unifiedSession,
+    teacherSession
+  };
 };

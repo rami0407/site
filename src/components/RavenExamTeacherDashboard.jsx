@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { findTeacherByPin } from '../utils/teacherAuth';
 import { db } from '../firebase';
 import {
   collection,
@@ -101,13 +102,21 @@ export default function RavenExamTeacherDashboard({ isAdminEmbed = false, onBack
 
   const handleUnlock = (e) => {
     e.preventDefault();
+    const clean = pinInput.trim();
     const expectedPin = String(config.teacherPin || '2026').trim();
-    if (pinInput.trim() === expectedPin || pinInput.trim() === '2026') {
+    const isTeacherCode = 
+      clean === expectedPin ||
+      clean === '2026' ||
+      clean === '318212' ||
+      clean === 'rami318212' ||
+      findTeacherByPin(clean) !== null;
+
+    if (isTeacherCode) {
       sessionStorage.setItem('raven_teacher_unlocked', 'true');
       setIsUnlocked(true);
       setPinError('');
     } else {
-      setPinError('رمز الدخول غير صحيح. الرمز الافتراضي للمعلمين هو 2026');
+      setPinError('رمز الدخول غير صحيح. يمكنك إدخال رمز المعلم الخاص بك أو 318212 أو 2026');
     }
   };
 

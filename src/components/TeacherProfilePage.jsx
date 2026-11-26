@@ -9,6 +9,7 @@ import {
   setTabTeacherSession,
   clearTabTeacherSession,
   initTeacherProfilesSync,
+  authenticateTeacherUnified,
   DEFAULT_TEACHER_PIN,
   DEFAULT_CUSTOM_TEACHER_PINS
 } from '../utils/teacherAuth';
@@ -122,31 +123,17 @@ const TeacherProfilePage = () => {
 
     setIsLoggingIn(true);
     try {
-      const assignedPersonalPin = DEFAULT_CUSTOM_TEACHER_PINS[teacher.id];
-      const assignedTrimmed = assignedPersonalPin ? String(assignedPersonalPin).trim() : '';
-      const matchesAssignedPin =
-        assignedTrimmed &&
-        (cleanPin === assignedTrimmed || (assignedTrimmed.startsWith('0') && cleanPin === assignedTrimmed.replace(/^0+/, '')));
-      const isValidCustomCloudPin =
-        cleanPin !== DEFAULT_TEACHER_PIN && cleanPin !== '318212'
-          ? await verifyTeacherCredentials(teacher.id, cleanPin)
-          : false;
+      const authRes = await authenticateTeacherUnified({
+        teacherId: teacher.id,
+        pin: cleanPin,
+        name: teacher.nameAr || teacher.nameHe
+      });
 
-      if (matchesAssignedPin || isValidCustomCloudPin) {
-        const sessionObj = {
-          ...teacher,
-          systemRole:
-            teacher.id === 'tch_36'
-              ? 'principal'
-              : teacher.id === 'tch_2'
-              ? 'eval_coord'
-              : 'homeroom_teacher'
-        };
-        setTabTeacherSession(sessionObj);
-        setActiveTeacher(sessionObj);
+      if (authRes.success) {
+        setActiveTeacher(authRes.teacherSession);
         setPinInput('');
       } else {
-        setLoginError('❌ הקוד האישי שגוי. נא לבדוק ולהזין שוב.');
+        setLoginError('❌ הקוד האישי שגוי. נא לבדוק ולהזין שוב (הקוד האישי שלך או 318212).');
       }
     } finally {
       setIsLoggingIn(false);
