@@ -1543,22 +1543,27 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     triggerToast('🗑️ העמודה הוסרה בהצלחה.');
   };
 
-  const handleRenameColumn = (colId, newTitleHe, newGroupHe) => {
-    const cleanTitle = (newTitleHe || '').trim();
-    if (!cleanTitle) return;
+  const handleRenameColumn = (colId, newTitleHe, newGroupHe, trimEdges = false) => {
+    const rawTitle = newTitleHe ?? '';
+    const rawGroup = newGroupHe ?? '';
+    const finalTitle = trimEdges ? rawTitle.trim() || 'שדה מיפוי' : rawTitle;
+    const finalGroup = trimEdges ? rawGroup.trim() || 'כללי' : rawGroup;
+
     const nextCols = holisticColumns.map((col) =>
       col.id === colId
         ? {
             ...col,
-            titleHe: cleanTitle,
-            titleAr: cleanTitle,
-            groupHe: newGroupHe ? newGroupHe.trim() : col.groupHe
+            titleHe: finalTitle,
+            titleAr: finalTitle,
+            groupHe: newGroupHe !== undefined ? finalGroup : col.groupHe
           }
         : col
     );
     setHolisticColumns(nextCols);
-    saveGlobalConfig({ holisticColumns: nextCols }, 350);
-    triggerToast('✅ שם השדה / הקטגוריה עודכן בהצלחה!');
+    saveGlobalConfig({ holisticColumns: nextCols }, trimEdges ? 100 : 500);
+    if (trimEdges) {
+      triggerToast('✅ שם השדה / הקטגוריה עודכן בהצלחה!');
+    }
   };
 
   const handleSetColumnMultiMode = (colId, allowMulti) => {
@@ -1607,10 +1612,11 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     triggerToast(`✅ נוספה אפשרות חדשה: "${cleanLabel}" ונשמרה בענן!`);
   };
 
-  // Edit / Replace an existing option's label or color (and update all students who had the old label)
-  const handleUpdateOptionInColumn = (colId, optIndex, updatedLabel, updatedColor) => {
-    const cleanLabel = (updatedLabel || '').trim();
-    if (!cleanLabel) return;
+  // Edit / Replace an existing option's label or color (preserves spaces while typing; updates students cleanly!)
+  const handleUpdateOptionInColumn = (colId, optIndex, updatedLabel, updatedColor, trimEdges = false) => {
+    const rawLabel = updatedLabel ?? '';
+    const nextLabel = trimEdges ? rawLabel.trim() : rawLabel;
+    if (trimEdges && !nextLabel) return;
 
     let oldValToReplace = null;
     const nextCols = holisticColumns.map((col) => {
@@ -1621,21 +1627,22 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
       oldValToReplace = currentOptions[optIndex].value;
       currentOptions[optIndex] = {
         ...currentOptions[optIndex],
-        value: cleanLabel,
-        labelHe: cleanLabel,
+        value: nextLabel,
+        labelHe: nextLabel,
         color: updatedColor || currentOptions[optIndex].color || 'green'
       };
       return { ...col, options: currentOptions };
     });
 
     setHolisticColumns(nextCols);
-    saveGlobalConfig({ holisticColumns: nextCols }, 350);
+    saveGlobalConfig({ holisticColumns: nextCols }, trimEdges ? 100 : 500);
 
-    // If the option text was changed/replaced, automatically update students across classes who had the old value
-    if (oldValToReplace && oldValToReplace !== cleanLabel) {
+    // If the option text was changed/replaced to a non-empty string, automatically update students across classes who had the old value
+    if (nextLabel.trim() && oldValToReplace && oldValToReplace !== nextLabel) {
+      const latestMap = classStudentsMapRef.current || classStudentsMap;
       SCHOOL_19_CLASSES.forEach((cls) => {
         const key = `${selectedYear}_${cls.id}`;
-        const stus = classStudentsMap[key] || [];
+        const stus = latestMap[key] || [];
         const hasMatch = stus.some((s) => {
           const v = s[colId];
           return Array.isArray(v) ? v.includes(oldValToReplace) : v === oldValToReplace;
@@ -1645,17 +1652,19 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
             const v = s[colId];
             if (Array.isArray(v)) {
               return v.includes(oldValToReplace)
-                ? { ...s, [colId]: v.map((item) => (item === oldValToReplace ? cleanLabel : item)) }
+                ? { ...s, [colId]: v.map((item) => (item === oldValToReplace ? nextLabel : item)) }
                 : s;
             }
-            return s[colId] === oldValToReplace ? { ...s, [colId]: cleanLabel } : s;
+            return s[colId] === oldValToReplace ? { ...s, [colId]: nextLabel } : s;
           });
           saveClassStudents(cls.id, updatedStus);
         }
       });
     }
 
-    triggerToast('✅ אפשרות המענה עודכנה בהצלחה!');
+    if (trimEdges) {
+      triggerToast('✅ אפשרות המענה עודכנה בהצלחה!');
+    }
   };
 
   // Reorder an option up (-1) or down (+1)
@@ -1720,15 +1729,17 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     triggerToast('✅ מקצוע לימודי חדש נוסף לגיליון הציונים!');
   };
 
-  const handleRenameGradeSubject = (subjId, newTitle) => {
-    const clean = (newTitle || '').trim();
-    if (!clean) return;
+  const handleRenameGradeSubject = (subjId, newTitle, trimEdges = false) => {
+    const raw = newTitle ?? '';
+    const finalTitle = trimEdges ? raw.trim() || 'מקצוע לימודי' : raw;
     const nextSubjs = gradeSubjects.map((s) =>
-      s.id === subjId ? { ...s, titleHe: clean, titleAr: clean } : s
+      s.id === subjId ? { ...s, titleHe: finalTitle, titleAr: finalTitle } : s
     );
     setGradeSubjects(nextSubjs);
-    saveGlobalConfig({ gradeSubjects: nextSubjs });
-    triggerToast('✅ שם המקצוע עודכן בהצלחה!');
+    saveGlobalConfig({ gradeSubjects: nextSubjs }, trimEdges ? 100 : 500);
+    if (trimEdges) {
+      triggerToast('✅ שם המקצוע עודכן בהצלחה!');
+    }
   };
 
   const handleDeleteGradeSubject = (subjId) => {
@@ -6064,7 +6075,8 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                       <input
                         type="text"
                         value={subj.titleHe}
-                        onChange={(e) => handleRenameGradeSubject(subj.id, e.target.value)}
+                        onChange={(e) => handleRenameGradeSubject(subj.id, e.target.value, false)}
+                        onBlur={(e) => handleRenameGradeSubject(subj.id, e.target.value, true)}
                         style={{
                           flex: 1,
                           padding: '0.45rem 0.65rem',
@@ -7211,7 +7223,8 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                   <input
                     type="text"
                     value={activeCol.titleHe}
-                    onChange={(e) => handleRenameColumn(activeCol.id, e.target.value, activeCol.groupHe)}
+                    onChange={(e) => handleRenameColumn(activeCol.id, e.target.value, activeCol.groupHe, false)}
+                    onBlur={(e) => handleRenameColumn(activeCol.id, e.target.value, activeCol.groupHe, true)}
                     style={{
                       width: '100%',
                       padding: '0.55rem 0.75rem',
@@ -7229,7 +7242,8 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                   <input
                     type="text"
                     value={activeCol.groupHe || ''}
-                    onChange={(e) => handleRenameColumn(activeCol.id, activeCol.titleHe, e.target.value)}
+                    onChange={(e) => handleRenameColumn(activeCol.id, activeCol.titleHe, e.target.value, false)}
+                    onBlur={(e) => handleRenameColumn(activeCol.id, activeCol.titleHe, e.target.value, true)}
                     style={{
                       width: '100%',
                       padding: '0.55rem 0.75rem',
@@ -7420,7 +7434,8 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                         <input
                           type="text"
                           value={opt.labelHe}
-                          onChange={(e) => handleUpdateOptionInColumn(activeCol.id, optIdx, e.target.value, opt.color)}
+                          onChange={(e) => handleUpdateOptionInColumn(activeCol.id, optIdx, e.target.value, opt.color, false)}
+                          onBlur={(e) => handleUpdateOptionInColumn(activeCol.id, optIdx, e.target.value, opt.color, true)}
                           style={{
                             flex: 1,
                             minWidth: '180px',
@@ -7438,7 +7453,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                         {/* Editable Option Color Selector */}
                         <select
                           value={opt.color || 'green'}
-                          onChange={(e) => handleUpdateOptionInColumn(activeCol.id, optIdx, opt.labelHe, e.target.value)}
+                          onChange={(e) => handleUpdateOptionInColumn(activeCol.id, optIdx, opt.labelHe, e.target.value, true)}
                           style={{
                             padding: '0.45rem 0.55rem',
                             borderRadius: '8px',
