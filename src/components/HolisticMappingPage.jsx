@@ -247,6 +247,12 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   const [multiSelectSearch, setMultiSelectSearch] = useState('');
   const [multiSelectCustomInput, setMultiSelectCustomInput] = useState('');
 
+  // Calm-UI menus (secondary actions are collapsed by default)
+  const [showHeaderMenu, setShowHeaderMenu] = useState(false);
+  const [showMoreTabsMenu, setShowMoreTabsMenu] = useState(false);
+  const [showToolbarMenu, setShowToolbarMenu] = useState(false);
+  const [showLegend, setShowLegend] = useState(false);
+
   const [newSubjTitleHe, setNewSubjTitleHe] = useState('');
   const [newSubjTitleAr, setNewSubjTitleAr] = useState('');
 
@@ -2627,609 +2633,385 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
         </div>
       )}
 
-      {/* Top Hero Banner */}
+      {/* Top Hero Banner — simplified & calm: only essentials visible, secondary actions inside one menu */}
       <header className="holistic-hero-banner no-print">
         <div className="holistic-hero-inner">
           <div className="holistic-title-block">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
-              <span
-                style={{
-                  background: '#fbbf24',
-                  color: '#0f172a',
-                  padding: '0.2rem 0.75rem',
-                  borderRadius: '999px',
-                  fontSize: '0.78rem',
-                  fontWeight: 900
-                }}
-              >
-                🔒 מערכת פנימית לצוות החינוכי והמחנכים (גישה בקישור ישיר / לוח בקרה)
-              </span>
-              <span className="holistic-badge-role">{userCapabilities.roleTitleHe}</span>
-              {activeTeacher && (
-                <span style={{ fontSize: '0.86rem', color: '#e2e8f0', fontWeight: 700 }}>
-                  👤 {activeTeacher.nameHe || activeTeacher.nameAr}
-                </span>
-              )}
-            </div>
             <h1>
               <span>🧭</span>
-              <span>מיפוי הוליסטי רב-שנתי לתלמיד (19 כיתות)</span>
+              <span>מיפוי הוליסטי רב-שנתי</span>
             </h1>
-            <p>
-              תמונה פדגוגית, רגשית, חברתית ולימודית מקיפה — ניתוח ברמת תלמיד, כיתה, שכבה וכלל בית הספר לאורך שנים
-            </p>
+            <div className="holistic-hero-meta">
+              <span className="holistic-badge-role" title={userCapabilities.roleTitleHe}>
+                {userCapabilities.isSystemManager ? '👑 הרשאת ניהול' : '✏️ מילוי נתונים'}
+              </span>
+              {activeTeacher && (
+                <span className="holistic-hero-user">👤 {activeTeacher.nameHe || activeTeacher.nameAr}</span>
+              )}
+              <span
+                className={`holistic-sync-pill ${cloudSyncStatus}`}
+                title="סנכרון חי ומיידי בין המנהל, הרכזת ומחנכי הכיתות"
+              >
+                {cloudSyncStatus === 'saving'
+                  ? '⏳ שומר...'
+                  : cloudSyncStatus === 'unsaved'
+                  ? '⚠️ ממתין לשמירה'
+                  : `🟢 מסונכרן ${lastSavedAt}`}
+              </span>
+            </div>
           </div>
 
           <div className="holistic-top-controls">
-            {/* Live Cloud Sync Badge + Auto-Save Toggle + Manual Save Button */}
-            <div
-              style={{
-                background:
-                  cloudSyncStatus === 'synced'
-                    ? 'rgba(16, 185, 129, 0.24)'
-                    : cloudSyncStatus === 'unsaved'
-                    ? 'rgba(239, 68, 68, 0.28)'
-                    : 'rgba(245, 158, 11, 0.28)',
-                border: `1.5px solid ${
-                  cloudSyncStatus === 'synced' ? '#34d399' : cloudSyncStatus === 'unsaved' ? '#f87171' : '#fbbf24'
-                }`,
-                padding: '0.45rem 0.85rem',
-                borderRadius: '14px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.45rem',
-                color: '#ecfdf5',
-                fontSize: '0.8rem',
-                fontWeight: 900
-              }}
-              title="מزامنة حية ومباشرة بين المدير والمركزة ومربيات الصفوف"
+            <select
+              className="holistic-compact-select"
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              title="שנת לימודים"
             >
-              <span>{cloudSyncStatus === 'saving' ? '⏳' : cloudSyncStatus === 'unsaved' ? '⚠️' : '🟢'}</span>
-              <span>
-                {cloudSyncStatus === 'saving'
-                  ? 'جاري الحفظ والحتلنة المباشرة...'
-                  : cloudSyncStatus === 'unsaved'
-                  ? 'تغييرات بانتظار الحفظ اليدوي'
-                  : `محتلن مباشر (${lastSavedAt}) — ${lastUpdatedBy}`}
-              </span>
-            </div>
+              {academicYears.map((yr) => (
+                <option key={yr.id} value={yr.id}>
+                  📅 {yr.labelHe}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="holistic-compact-select"
+              value={selectedPeriod}
+              onChange={(e) => setSelectedPeriod(e.target.value)}
+              title="תקופת הערכה"
+            >
+              {ASSESSMENT_PERIODS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  ⏳ {p.shortHe}
+                </option>
+              ))}
+            </select>
 
             <button
               type="button"
+              className={`holistic-save-btn ${hasUnsavedChanges ? 'dirty' : ''}`}
               onClick={handleManualSaveNow}
               disabled={isSavingCloud}
-              style={{
-                background: hasUnsavedChanges
-                  ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
-                  : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                color: '#ffffff',
-                border: '2px solid #a7f3d0',
-                padding: '0.52rem 1rem',
-                borderRadius: '12px',
-                fontWeight: 900,
-                cursor: 'pointer',
-                fontSize: '0.85rem',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)'
-              }}
-              title="حفظ يدوي فوري ومزامنة مع مربية الصف والإدارة / שמירה ידנית כעת"
+              title="שמירה ידנית מיידית (השמירה האוטומטית פעילה תמיד)"
             >
               <span>💾</span>
-              <span>{isSavingCloud ? 'جاري الحفظ...' : 'حفظ يدوي الآن (שמירה ידנית)'}</span>
+              <span>{isSavingCloud ? 'שומר...' : 'שמור'}</span>
             </button>
 
-            <div
-              style={{
-                background: 'rgba(59, 130, 246, 0.28)',
-                color: '#ffffff',
-                border: '1.5px solid #60a5fa',
-                padding: '0.5rem 0.9rem',
-                borderRadius: '12px',
-                fontWeight: 900,
-                fontSize: '0.82rem',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem'
-              }}
-              title="כל שינוי נשמר אוטומטית ומסונכרן בזמן אמת לכל המערכת"
-            >
-              <span>⚡</span>
-              <span>שמירה אוטומטית פעילה</span>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleForceLiveSync}
-              disabled={isSavingCloud}
-              style={{
-                background: 'rgba(255, 255, 255, 0.16)',
-                color: '#fef08a',
-                border: '1.5px solid rgba(254, 240, 138, 0.6)',
-                padding: '0.5rem 0.85rem',
-                borderRadius: '12px',
-                fontWeight: 900,
-                cursor: 'pointer',
-                fontSize: '0.8rem',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem'
-              }}
-              title="جلب أحدث التعديلات من مربية الصف أو الإدارة فوراً"
-            >
-              <span>🔄</span>
-              <span>حتلنة فورية</span>
-            </button>
-
-            {userCapabilities.canManageSchema && (
+            <div className="holistic-menu-wrap">
               <button
                 type="button"
-                onClick={handleDownloadEncryptedBackup}
-                style={{
-                  background: 'rgba(15, 23, 42, 0.55)',
-                  color: '#fef08a',
-                  border: '1.5px solid #fbbf24',
-                  padding: '0.5rem 0.9rem',
-                  borderRadius: '12px',
-                  fontWeight: 900,
-                  cursor: 'pointer',
-                  fontSize: '0.82rem'
-                }}
-                title="הורד עותק גיבוי מוצפן (AES-256-GCM) של כל 19 הכיתות"
+                className="holistic-menu-trigger"
+                onClick={() => setShowHeaderMenu((v) => !v)}
+                title="עוד פעולות"
               >
-                🔐 גיבוי מוצפן (AES-256)
+                ⋯ עוד
               </button>
-            )}
-
-            {/* Academic Year Selector */}
-            <div
-              style={{
-                background: 'rgba(255,255,255,0.12)',
-                padding: '0.5rem 0.9rem',
-                borderRadius: '14px',
-                border: '1px solid rgba(255,255,255,0.25)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem'
-              }}
-            >
-              <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#fef08a' }}>📅 שנת לימודים:</span>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
-                style={{
-                  background: '#ffffff',
-                  color: '#0f172a',
-                  border: 'none',
-                  padding: '0.4rem 0.75rem',
-                  borderRadius: '10px',
-                  fontWeight: 900,
-                  fontSize: '0.9rem',
-                  cursor: 'pointer'
-                }}
-              >
-                {academicYears.map((yr) => (
-                  <option key={yr.id} value={yr.id}>
-                    {yr.labelHe} {yr.isCurrent ? ' (נוכחית)' : ' (ארכיון)'}
-                  </option>
-                ))}
-              </select>
+              {showHeaderMenu && (
+                <>
+                  <div className="holistic-menu-backdrop" onClick={() => setShowHeaderMenu(false)} />
+                  <div className="holistic-menu-pop">
+                    <button
+                      type="button"
+                      className="holistic-menu-item"
+                      onClick={() => {
+                        setShowHeaderMenu(false);
+                        handleForceLiveSync();
+                      }}
+                    >
+                      🔄 סנכרון מיידי מהענן
+                    </button>
+                    <button
+                      type="button"
+                      className="holistic-menu-item"
+                      onClick={() => {
+                        setShowHeaderMenu(false);
+                        const directUrl = `${window.location.origin}${window.location.pathname}#/holistic-mapping`;
+                        navigator.clipboard.writeText(directUrl);
+                        triggerToast('✅ הקישור הישיר למחנכים הועתק!');
+                      }}
+                    >
+                      🔗 העתק קישור למחנכים
+                    </button>
+                    <button
+                      type="button"
+                      className="holistic-menu-item"
+                      onClick={() => {
+                        setShowHeaderMenu(false);
+                        const directUrl = `${window.location.origin}${window.location.pathname}#/holistic-mapping`;
+                        const text = `שלום לצוות המחנכים והמורים,\nמצורף קישור ישיר למערכת המיפוי ההוליסטי הבית-ספרית להזנת נתוני הכיתה:\n${directUrl}`;
+                        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                      }}
+                    >
+                      💬 שליחה בוואטסאפ למחנכים
+                    </button>
+                    {userCapabilities.canViewAllClasses && (
+                      <button
+                        type="button"
+                        className="holistic-menu-item"
+                        onClick={() => {
+                          setShowHeaderMenu(false);
+                          handleExportAllClassesMaster();
+                        }}
+                      >
+                        📥 חילוץ כל 19 הכיתות לאקסל
+                      </button>
+                    )}
+                    {userCapabilities.canManageSchema && (
+                      <button
+                        type="button"
+                        className="holistic-menu-item"
+                        onClick={() => {
+                          setShowHeaderMenu(false);
+                          handleDownloadEncryptedBackup();
+                        }}
+                      >
+                        🔐 גיבוי מוצפן (AES-256)
+                      </button>
+                    )}
+                    {activeTeacher && (
+                      <button
+                        type="button"
+                        className="holistic-menu-item"
+                        onClick={() => {
+                          setShowHeaderMenu(false);
+                          setCustomPinInput('');
+                          setCustomPinConfirm('');
+                          setShowChangePinModal(true);
+                        }}
+                      >
+                        🔑 בחירת קוד אישי
+                      </button>
+                    )}
+                    {!isAdminEmbed && (
+                      <>
+                        <a
+                          href="#/teacher-profile"
+                          className="holistic-menu-item"
+                          onClick={() => setShowHeaderMenu(false)}
+                        >
+                          👤 הפרופיל שלי
+                        </a>
+                        <button
+                          type="button"
+                          className="holistic-menu-item danger"
+                          onClick={() => {
+                            setShowHeaderMenu(false);
+                            clearTabTeacherSession();
+                            logoutTeacherSession();
+                            setActiveTeacher(null);
+                          }}
+                        >
+                          🚪 החלף משתמש / יציאה
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
-
-            {/* Assessment Stage / Semester Selector */}
-            <div
-              style={{
-                background: 'rgba(255,255,255,0.12)',
-                padding: '0.5rem 0.9rem',
-                borderRadius: '14px',
-                border: '1px solid rgba(255,255,255,0.25)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem'
-              }}
-            >
-              <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#bae6fd' }}>⏳ תקופת הערכה:</span>
-              <select
-                value={selectedPeriod}
-                onChange={(e) => setSelectedPeriod(e.target.value)}
-                style={{
-                  background: '#ffffff',
-                  color: '#0f172a',
-                  border: 'none',
-                  padding: '0.4rem 0.75rem',
-                  borderRadius: '10px',
-                  fontWeight: 900,
-                  fontSize: '0.88rem',
-                  cursor: 'pointer'
-                }}
-              >
-                {ASSESSMENT_PERIODS.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.labelHe}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Direct Share Link for Homeroom Teachers */}
-            <button
-              type="button"
-              onClick={() => {
-                const directUrl = `${window.location.origin}${window.location.pathname}#/holistic-mapping`;
-                navigator.clipboard.writeText(directUrl);
-                triggerToast('✅ הקישור הישיר למחנכים הועתק! (تم نسخ الرابط المباشر للمربين)');
-              }}
-              style={{
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                color: '#ffffff',
-                border: '1.5px solid #6ee7b7',
-                padding: '0.55rem 1rem',
-                borderRadius: '12px',
-                fontWeight: 900,
-                cursor: 'pointer',
-                fontSize: '0.85rem',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
-              }}
-              title="העתק קישור ישיר לשליחה למחנכים / نسخ الرابط لإرساله للمربين"
-            >
-              <span>🔗</span>
-              <span>העתק קישור למחנכים (نسخ الرابط للمربين)</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                const directUrl = `${window.location.origin}${window.location.pathname}#/holistic-mapping`;
-                const text = `שלום לצוות המחנכים והמורים,\nמצורף קישור ישיר למערכת המיפוי ההוליסטי הבית-ספרית להזנת נתוני הכיתה:\n${directUrl}`;
-                window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-              }}
-              style={{
-                background: 'rgba(37, 211, 102, 0.22)',
-                color: '#bbf7d0',
-                border: '1px solid #4ade80',
-                padding: '0.55rem 0.9rem',
-                borderRadius: '12px',
-                fontWeight: 800,
-                cursor: 'pointer',
-                fontSize: '0.84rem'
-              }}
-              title="שתף קישור בוואטסאפ לצוות המחנכים"
-            >
-              💬 וואטסאפ למחנכים
-            </button>
-
-            {userCapabilities.canViewAllClasses && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    try {
-                      sessionStorage.setItem(
-                        'musherfe_holistic_ai_ctx',
-                        JSON.stringify({
-                          year: selectedYear,
-                          period: selectedPeriod,
-                          classId: selectedClassId
-                        })
-                      );
-                    } catch {}
-                    window.location.hash = '#/holistic-analytics';
-                  }}
-                  style={{
-                    background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
-                    color: '#ffffff',
-                    border: '2px solid #fde68a',
-                    padding: '0.55rem 1.05rem',
-                    borderRadius: '12px',
-                    fontWeight: 900,
-                    cursor: 'pointer',
-                    fontSize: '0.86rem',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.45rem',
-                    boxShadow: '0 6px 18px rgba(124, 58, 237, 0.45)'
-                  }}
-                  title="انتقل إلى صفحة تحليل المعلومات والذكاء الاصطناعي المستقلة (حصري للمدير والمركزة جيهان)"
-                >
-                  <span>🧠</span>
-                  <span>تحليل المعلومات والذكاء الاصطناعي (ניתוח חכם ו-AI)</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleExportAllClassesMaster}
-                  style={{
-                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                    color: '#ffffff',
-                    border: '1.5px solid #fde68a',
-                    padding: '0.55rem 1rem',
-                    borderRadius: '12px',
-                    fontWeight: 900,
-                    cursor: 'pointer',
-                    fontSize: '0.84rem',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.4rem',
-                    boxShadow: '0 4px 12px rgba(245, 158, 11, 0.35)'
-                  }}
-                  title="חילוץ וייצוא כל 19 הכיתות לקובץ אקסל מאוחד / استخراج وتلخيص كل الصفوف لملف إكسل"
-                >
-                  <span>📥</span>
-                  <span>חילוץ כל 19 הכיתות (استخراج كل الصفوف)</span>
-                </button>
-              </>
-            )}
-
-            {activeTeacher && (
-              <button
-                type="button"
-                onClick={() => {
-                  setCustomPinInput('');
-                  setCustomPinConfirm('');
-                  setShowChangePinModal(true);
-                }}
-                style={{
-                  background: 'rgba(59, 130, 246, 0.25)',
-                  color: '#dbeafe',
-                  border: '1.5px solid #60a5fa',
-                  padding: '0.55rem 0.95rem',
-                  borderRadius: '12px',
-                  fontWeight: 900,
-                  cursor: 'pointer',
-                  fontSize: '0.84rem',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.35rem'
-                }}
-                title="בחר או שנה קוד סודי אישי / اختيار أو تغيير الكود السري الخاص بي"
-              >
-                <span>🔑</span>
-                <span>בחר קוד אישי (كود خاص بي)</span>
-              </button>
-            )}
-
-            {!isAdminEmbed && (
-              <>
-              <a
-                href="#/teacher-profile"
-                style={{
-                  background: 'linear-gradient(135deg, #0f766e 0%, #14b8a6 100%)',
-                  color: '#ffffff',
-                  border: '1.5px solid #5eead4',
-                  padding: '0.5rem 0.9rem',
-                  borderRadius: '12px',
-                  fontWeight: 900,
-                  fontSize: '0.82rem',
-                  textDecoration: 'none',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.4rem'
-                }}
-                title="מעבר לפרופיל האישי שלי (עריכת פרטים, תמונה וסיסמה)"
-              >
-                {activeTeacher?.photoUrl ? (
-                  <img
-                    src={activeTeacher.photoUrl}
-                    alt=""
-                    style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover', border: '1px solid #fef08a' }}
-                  />
-                ) : (
-                  <span>👤</span>
-                )}
-                <span>הפרופיל שלי</span>
-              </a>
-
-              <button
-                type="button"
-                onClick={() => {
-                  clearTabTeacherSession();
-                  logoutTeacherSession();
-                  setActiveTeacher(null);
-                }}
-                style={{
-                  background: 'rgba(239, 68, 68, 0.2)',
-                  color: '#fecaca',
-                  border: '1px solid #f87171',
-                  padding: '0.55rem 1rem',
-                  borderRadius: '12px',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  fontSize: '0.85rem'
-                }}
-              >
-                החלף משתמש / יציאה
-              </button>
-              </>
-            )}
           </div>
         </div>
       </header>
 
       <div className="holistic-container">
-        {/* Main Navigation Tabs */}
+        {/* Main Navigation — 3 primary tabs + AI button + one "more" menu */}
         <div className="holistic-nav-tabs no-print">
-          <button
-            type="button"
-            className={`holistic-tab-btn ${activeMainTab === 'class-sheet' ? 'active' : ''}`}
-            onClick={() => setActiveMainTab('class-sheet')}
-            style={activeMainTab === 'class-sheet' ? { background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)', color: '#fff' } : { border: '2px solid #93c5fd' }}
-          >
-            <span>📋</span>
-            <span>1. המיפוי החברתי-התנהגותי (الميبوي الاجتماعي السلوكي — بدون علامات)</span>
-          </button>
-
-          <button
-            type="button"
-            className={`holistic-tab-btn ${activeMainTab === 'grades-matrix' ? 'active' : ''}`}
-            onClick={() => setActiveMainTab('grades-matrix')}
-            style={activeMainTab === 'grades-matrix' ? { background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', color: '#fff' } : { border: '2px solid #6ee7b7' }}
-          >
-            <span>🚦</span>
-            <span>2. יומן ציונים ומיומנויות (سجل العلامات والمهارات — محطات 10، 12، 3، 6)</span>
-          </button>
-
-          <button
-            type="button"
-            className={`holistic-tab-btn ${activeMainTab === 'student-analytics' ? 'active' : ''}`}
-            onClick={() => {
-              if (!selectedStudentForCard && currentStudents.length > 0) {
-                setSelectedStudentForCard(currentStudents[0]);
-              }
-              setActiveMainTab('student-analytics');
-            }}
-            style={activeMainTab === 'student-analytics' ? { background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)', color: '#fff' } : { border: '2px solid #c4b5fd' }}
-          >
-            <span>🎓</span>
-            <span>3. הפרופיל המשולב לתלמיד ולכיתה (القسم الجامع: العلامات + الاجتماعي السلوكي)</span>
-          </button>
-
-          {userCapabilities.canViewAllClasses && (
-            <>
-              <button
-                type="button"
-                className="holistic-tab-btn"
-                onClick={() => {
-                  try {
-                    sessionStorage.setItem(
-                      'musherfe_holistic_ai_ctx',
-                      JSON.stringify({
-                        year: selectedYear,
-                        period: selectedPeriod,
-                        classId: selectedClassId
-                      })
-                    );
-                  } catch {}
-                  window.location.hash = '#/holistic-analytics';
-                }}
-                style={{
-                  background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
-                  color: '#ffffff',
-                  border: '2px solid #fbbf24',
-                  boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)'
-                }}
-              >
-                <span>🧠</span>
-                <span>تحليل المعلومات والذكاء الاصطناعي (صفحة مستقلة — AI) ↗</span>
-              </button>
-
-              <button
-                type="button"
-                className={`holistic-tab-btn ${activeMainTab === 'grade-analytics' ? 'active' : ''}`}
-                onClick={() => setActiveMainTab('grade-analytics')}
-              >
-                <span>📊</span>
-                <span>ניתוח ברמת שכבה (א׳–ו׳)</span>
-              </button>
-
-              <button
-                type="button"
-                className={`holistic-tab-btn ${activeMainTab === 'school-analytics' ? 'active' : ''}`}
-                onClick={() => setActiveMainTab('school-analytics')}
-              >
-                <span>🏫</span>
-                <span>ניתוח ברמת בית ספר (19 כיתות)</span>
-              </button>
-            </>
-          )}
-
-          <button
-            type="button"
-            className={`holistic-tab-btn ${activeMainTab === 'permissions' ? 'active' : ''}`}
-            onClick={() => {
-              setDelegateTargetClassId(selectedClassId);
-              setActiveMainTab('permissions');
-            }}
-          >
-            <span>🔑</span>
-            <span>{userCapabilities.isSystemManager ? 'ניהול הרשאות כיתות והוספת מורים' : 'הרשאות מורים מקצועיים לכיתתי'}</span>
-          </button>
-
-          {userCapabilities.canManageSchema && (
+          {[
+            { id: 'class-sheet', icon: '📋', label: 'מיפוי חברתי-התנהגותי' },
+            { id: 'grades-matrix', icon: '🚦', label: 'ציונים ומיומנויות' },
+            { id: 'student-analytics', icon: '🎓', label: 'פרופיל משולב' }
+          ].map((tab) => (
             <button
+              key={tab.id}
               type="button"
-              className={`holistic-tab-btn ${activeMainTab === 'schema-builder' ? 'active' : ''}`}
-              onClick={() => setActiveMainTab('schema-builder')}
-              style={{ borderColor: '#c084fc', background: activeMainTab === 'schema-builder' ? undefined : '#faf5ff' }}
-            >
-              <span>🛠️</span>
-              <span>ניהול עמודות, אפשרויות מענה ומקצועות</span>
-            </button>
-          )}
-
-          {userCapabilities.canManageYears && (
-            <button
-              type="button"
-              className={`holistic-tab-btn ${activeMainTab === 'year-manager' ? 'active' : ''}`}
-              onClick={() => setActiveMainTab('year-manager')}
-              style={{ borderColor: '#6ee7b7', background: activeMainTab === 'year-manager' ? undefined : '#ecfdf5' }}
-            >
-              <span>📅</span>
-              <span>פתיחת שנה חדשה וארכיון רב-שנתי</span>
-            </button>
-          )}
-        </div>
-
-        {/* Classes Quick Strip: Shows ALL 19 classes to Principal Rami & Jihan, and ONLY the teacher's authorized class(es) to regular teachers */}
-        {(activeMainTab === 'class-sheet' || activeMainTab === 'grades-matrix' || activeMainTab === 'student-analytics' || activeMainTab === 'permissions') && (
-          <div className="classes-strip no-print">
-            <span style={{ fontWeight: 900, fontSize: '0.88rem', color: '#0f172a', marginLeft: '0.4rem' }}>
-              {userCapabilities.canViewAllClasses
-                ? '🏫 כל 19 כיתות בית הספר (תצוגת מנהל ורכזת):'
-                : `🏫 הכיתה שלך (${visibleClasses.length}):`}
-            </span>
-            {visibleClasses.map((cls) => {
-              const acc = getAccessForClass(cls.id);
-              const isSelected = cls.id === selectedClassId;
-              return (
-                <button
-                  key={cls.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedClassId(cls.id);
-                    setSelectedGradeLevel(cls.grade);
-                    setDelegateTargetClassId(cls.id);
-                  }}
-                  className={`class-chip-btn ${isSelected ? 'active' : ''}`}
-                  title={acc.accessBadgeHe}
-                >
-                  <span>{cls.nameHe}</span>
-                  {acc.isHomeroom && !userCapabilities.isSystemManager && <span>🔑</span>}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Traffic Light Scale Legend */}
-        <div className="traffic-light-legend no-print">
-          <strong style={{ fontSize: '0.86rem', color: '#78350f' }}>🚦 מפתח צבעי הרמזור לציונים:</strong>
-          {TRAFFIC_LIGHT_SCALE.map((tl) => (
-            <span
-              key={tl.id}
-              className="traffic-pill"
-              style={{
-                background: tl.bg,
-                color: tl.text,
-                borderColor: tl.border
+              className={`holistic-tab-btn ${activeMainTab === tab.id ? 'active' : ''}`}
+              onClick={() => {
+                if (tab.id === 'student-analytics' && !selectedStudentForCard && currentStudents.length > 0) {
+                  setSelectedStudentForCard(currentStudents[0]);
+                }
+                setActiveMainTab(tab.id);
               }}
             >
-              <span
-                style={{
-                  width: '10px',
-                  height: '10px',
-                  borderRadius: '50%',
-                  background: tl.badgeBg,
-                  display: 'inline-block'
-                }}
-              />
-              {tl.labelHe}
-            </span>
+              <span>{tab.icon}</span>
+              <span>{tab.label}</span>
+            </button>
           ))}
+
+          {userCapabilities.canViewAllClasses && (
+            <button
+              type="button"
+              className="holistic-tab-btn holistic-ai-link-btn"
+              onClick={() => {
+                try {
+                  sessionStorage.setItem(
+                    'musherfe_holistic_ai_ctx',
+                    JSON.stringify({ year: selectedYear, period: selectedPeriod, classId: selectedClassId })
+                  );
+                } catch {}
+                window.location.hash = '#/holistic-analytics';
+              }}
+              title="דף ניתוח נפרד עם בינה מלאכותית (מנהל ורכזת בלבד)"
+            >
+              <span>🧠</span>
+              <span>ניתוח חכם ו-AI</span>
+            </button>
+          )}
+
+          {(() => {
+            const moreTabs = [
+              ...(userCapabilities.canViewAllClasses
+                ? [
+                    { id: 'grade-analytics', icon: '📊', label: 'ניתוח ברמת שכבה' },
+                    { id: 'school-analytics', icon: '🏫', label: 'ניתוח ברמת בית ספר' }
+                  ]
+                : []),
+              {
+                id: 'permissions',
+                icon: '🔑',
+                label: userCapabilities.isSystemManager ? 'הרשאות כיתות והוספת מורים' : 'הרשאות מורים לכיתתי'
+              },
+              ...(userCapabilities.canManageSchema
+                ? [{ id: 'schema-builder', icon: '🛠️', label: 'ניהול עמודות ומקצועות' }]
+                : []),
+              ...(userCapabilities.canManageYears
+                ? [{ id: 'year-manager', icon: '📅', label: 'פתיחת שנה חדשה וארכיון' }]
+                : [])
+            ];
+            const isMoreActive = moreTabs.some((m) => m.id === activeMainTab);
+            return (
+              <div className="holistic-menu-wrap" style={{ marginRight: 'auto' }}>
+                <button
+                  type="button"
+                  className={`holistic-tab-btn ${isMoreActive ? 'active' : ''}`}
+                  onClick={() => setShowMoreTabsMenu((v) => !v)}
+                >
+                  <span>⚙️</span>
+                  <span>
+                    {isMoreActive
+                      ? moreTabs.find((m) => m.id === activeMainTab)?.label
+                      : 'ניהול וניתוחים'}{' '}
+                    ▾
+                  </span>
+                </button>
+                {showMoreTabsMenu && (
+                  <>
+                    <div className="holistic-menu-backdrop" onClick={() => setShowMoreTabsMenu(false)} />
+                    <div className="holistic-menu-pop">
+                      {moreTabs.map((m) => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          className={`holistic-menu-item ${activeMainTab === m.id ? 'selected' : ''}`}
+                          onClick={() => {
+                            setShowMoreTabsMenu(false);
+                            if (m.id === 'permissions') setDelegateTargetClassId(selectedClassId);
+                            setActiveMainTab(m.id);
+                          }}
+                        >
+                          {m.icon} {m.label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })()}
         </div>
+
+        {/* Classes selector: grade pills first, then only the classes of the chosen grade (instead of 19 chips) */}
+        {(activeMainTab === 'class-sheet' || activeMainTab === 'grades-matrix' || activeMainTab === 'student-analytics' || activeMainTab === 'permissions') &&
+          (() => {
+            const gradeNames = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳'];
+            const gradesList = Array.from(new Set(visibleClasses.map((c) => c.grade)));
+            const activeGrade = currentClassObj.grade;
+            const gradeClasses = visibleClasses.filter((c) => c.grade === activeGrade);
+            return (
+              <div className="classes-strip no-print">
+                {gradesList.length > 1 && (
+                  <>
+                    <span className="classes-strip-label">שכבה:</span>
+                    {gradesList.map((g) => (
+                      <button
+                        key={g}
+                        type="button"
+                        className={`class-chip-btn grade ${g === activeGrade ? 'active' : ''}`}
+                        onClick={() => {
+                          const first = visibleClasses.find((c) => c.grade === g);
+                          if (first) {
+                            setSelectedClassId(first.id);
+                            setSelectedGradeLevel(first.grade);
+                            setDelegateTargetClassId(first.id);
+                          }
+                        }}
+                      >
+                        {gradeNames[g - 1] || g}
+                      </button>
+                    ))}
+                    <span className="classes-strip-sep" />
+                  </>
+                )}
+                <span className="classes-strip-label">{userCapabilities.canViewAllClasses ? 'כיתה:' : 'הכיתה שלך:'}</span>
+                {gradeClasses.map((cls) => {
+                  const acc = getAccessForClass(cls.id);
+                  const isSelected = cls.id === selectedClassId;
+                  return (
+                    <button
+                      key={cls.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedClassId(cls.id);
+                        setSelectedGradeLevel(cls.grade);
+                        setDelegateTargetClassId(cls.id);
+                      }}
+                      className={`class-chip-btn ${isSelected ? 'active' : ''}`}
+                      title={acc.accessBadgeHe}
+                    >
+                      <span>{cls.nameHe}</span>
+                      {acc.isHomeroom && !userCapabilities.isSystemManager && <span>🔑</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
+        {/* Traffic Light Legend: only where grades are shown, collapsed by default */}
+        {(activeMainTab === 'grades-matrix' || activeMainTab === 'student-analytics') && (
+          <div className="no-print" style={{ marginBottom: '0.75rem' }}>
+            <button
+              type="button"
+              className="holistic-legend-toggle"
+              onClick={() => setShowLegend((v) => !v)}
+            >
+              🚦 מקרא צבעי הרמזור {showLegend ? '▲' : '▼'}
+            </button>
+            {showLegend && (
+              <div className="traffic-light-legend" style={{ marginTop: '0.5rem', marginBottom: 0 }}>
+                {TRAFFIC_LIGHT_SCALE.map((tl) => (
+                  <span
+                    key={tl.id}
+                    className="traffic-pill"
+                    style={{ background: tl.bg, color: tl.text, borderColor: tl.border }}
+                  >
+                    <span
+                      style={{
+                        width: '10px',
+                        height: '10px',
+                        borderRadius: '50%',
+                        background: tl.badgeBg,
+                        display: 'inline-block'
+                      }}
+                    />
+                    {tl.labelHe}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ===================================================================== */}
         {/* TAB 1: CLASS HOLISTIC MAPPING SHEET (גיליון מיפוי כיתתי)              */}
@@ -3249,7 +3031,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                       {getTeacherById(classPermissions[selectedClassId]?.homeroomTeacherId || currentClassObj.defaultHomeroomId)
                         ?.nameHe || currentClassObj.homeroomNameHe || 'לא שובץ'}
                     </strong>{' '}
-                    | סטטוס הרשאה: <span style={{ color: '#2563eb' }}>{currentClassAccess.accessBadgeHe}</span> | סה"כ תלמידים:{' '}
+                    | סה"כ תלמידים:{' '}
                     <strong>{currentStudents.length}</strong> (בנים:{' '}
                     <strong>{currentStudents.filter((s) => s.gender === 'זכר').length}</strong>, בנות:{' '}
                     <strong>{currentStudents.filter((s) => s.gender === 'נקבה').length}</strong>)
@@ -3258,30 +3040,20 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  onClick={handleManualSaveNow}
-                  disabled={isSavingCloud}
+                <input
+                  type="text"
+                  placeholder="🔍 חיפוש תלמיד בכיתה..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   style={{
-                    background: hasUnsavedChanges
-                      ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
-                      : 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-                    color: '#ffffff',
-                    border: '2px solid #6ee7b7',
-                    padding: '0.6rem 1.15rem',
+                    padding: '0.55rem 0.95rem',
                     borderRadius: '10px',
-                    fontWeight: 900,
+                    border: '1.5px solid #cbd5e1',
+                    fontWeight: 700,
                     fontSize: '0.88rem',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.4rem'
+                    minWidth: '200px'
                   }}
-                >
-                  <span>💾</span>
-                  <span>{isSavingCloud ? 'שומר...' : 'حفظ يدوي الآن (שמירה ידנית)'}</span>
-                </button>
+                />
 
                 <button
                   type="button"
@@ -3295,143 +3067,93 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                     borderRadius: '10px',
                     fontWeight: 900,
                     fontSize: '0.84rem',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.35rem'
+                    cursor: 'pointer'
                   }}
-                  title="حتلنة المعطيات الفورية بين المربية والإدارة"
+                  title="משיכת העדכונים האחרונים מהענן"
                 >
-                  <span>🔄</span>
-                  <span>حتلنة فورية (סנכרון חי)</span>
+                  🔄 סנכרון
                 </button>
 
-                <input
-                  type="text"
-                  placeholder="🔍 חיפוש תלמיד בכיתה..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  style={{
-                    padding: '0.55rem 0.95rem',
-                    borderRadius: '10px',
-                    border: '1.5px solid #cbd5e1',
-                    fontWeight: 700,
-                    fontSize: '0.88rem'
-                  }}
-                />
-
-                {userCapabilities.canManageSchema && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={openSmartImportModal}
-                      style={{
-                        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                        color: '#ffffff',
-                        border: '2px solid #fde68a',
-                        padding: '0.62rem 1.15rem',
-                        borderRadius: '10px',
-                        fontWeight: 900,
-                        fontSize: '0.88rem',
-                        cursor: 'pointer',
-                        boxShadow: '0 4px 14px rgba(217, 119, 6, 0.3)',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.4rem'
-                      }}
-                    >
-                      <span>📂</span>
-                      <span>העלאת קובץ קיים מהמחשב (אקסל / CSV)</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setShowAddStudentModal(true)}
-                      style={{
-                        background: '#059669',
-                        color: 'white',
-                        border: 'none',
-                        padding: '0.6rem 1rem',
-                        borderRadius: '10px',
-                        fontWeight: 800,
-                        fontSize: '0.86rem',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      ➕ הוסף תלמיד
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setShowBulkPasteModal(true)}
-                      style={{
-                        background: '#0284c7',
-                        color: 'white',
-                        border: 'none',
-                        padding: '0.6rem 1rem',
-                        borderRadius: '10px',
-                        fontWeight: 800,
-                        fontSize: '0.86rem',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      📋 הדבקת רשימת תלמידים
-                    </button>
-                  </>
-                )}
-
-                {userCapabilities.canManageSchema && (
+                <div className="holistic-menu-wrap">
                   <button
                     type="button"
-                    onClick={() => setActiveMainTab('schema-builder')}
-                    style={{
-                      background: '#7c3aed',
-                      color: 'white',
-                      border: 'none',
-                      padding: '0.6rem 1rem',
-                      borderRadius: '10px',
-                      fontWeight: 800,
-                      fontSize: '0.86rem',
-                      cursor: 'pointer'
-                    }}
+                    className="holistic-menu-trigger dark"
+                    onClick={() => setShowToolbarMenu((v) => !v)}
                   >
-                    ➕ הוסף עמודה / תחום חדש
+                    ⋯ עוד פעולות
                   </button>
-                )}
-
-                <button
-                  type="button"
-                  onClick={handleExportCSV}
-                  style={{
-                    background: '#f1f5f9',
-                    color: '#0f172a',
-                    border: '1.5px solid #cbd5e1',
-                    padding: '0.6rem 1rem',
-                    borderRadius: '10px',
-                    fontWeight: 800,
-                    fontSize: '0.86rem',
-                    cursor: 'pointer'
-                  }}
-                >
-                  📥 ייצוא לאקסל (.xlsx)
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => window.print()}
-                  style={{
-                    background: '#f1f5f9',
-                    color: '#0f172a',
-                    border: '1.5px solid #cbd5e1',
-                    padding: '0.6rem 0.9rem',
-                    borderRadius: '10px',
-                    fontWeight: 800,
-                    fontSize: '0.86rem',
-                    cursor: 'pointer'
-                  }}
-                >
-                  🖨️ הדפסה
-                </button>
+                  {showToolbarMenu && (
+                    <>
+                      <div className="holistic-menu-backdrop" onClick={() => setShowToolbarMenu(false)} />
+                      <div className="holistic-menu-pop">
+                        {userCapabilities.canManageSchema && (
+                          <>
+                            <button
+                              type="button"
+                              className="holistic-menu-item"
+                              onClick={() => {
+                                setShowToolbarMenu(false);
+                                setShowAddStudentModal(true);
+                              }}
+                            >
+                              ➕ הוסף תלמיד
+                            </button>
+                            <button
+                              type="button"
+                              className="holistic-menu-item"
+                              onClick={() => {
+                                setShowToolbarMenu(false);
+                                setShowBulkPasteModal(true);
+                              }}
+                            >
+                              📋 הדבקת רשימת תלמידים
+                            </button>
+                            <button
+                              type="button"
+                              className="holistic-menu-item"
+                              onClick={() => {
+                                setShowToolbarMenu(false);
+                                openSmartImportModal();
+                              }}
+                            >
+                              📂 העלאת קובץ אקסל / CSV
+                            </button>
+                            <button
+                              type="button"
+                              className="holistic-menu-item"
+                              onClick={() => {
+                                setShowToolbarMenu(false);
+                                setActiveMainTab('schema-builder');
+                              }}
+                            >
+                              🛠️ הוסף עמודה / תחום חדש
+                            </button>
+                          </>
+                        )}
+                        <button
+                          type="button"
+                          className="holistic-menu-item"
+                          onClick={() => {
+                            setShowToolbarMenu(false);
+                            handleExportCSV();
+                          }}
+                        >
+                          📥 ייצוא לאקסל (.xlsx)
+                        </button>
+                        <button
+                          type="button"
+                          className="holistic-menu-item"
+                          onClick={() => {
+                            setShowToolbarMenu(false);
+                            window.print();
+                          }}
+                        >
+                          🖨️ הדפסה
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 

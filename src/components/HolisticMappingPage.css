@@ -12,9 +12,196 @@
 .holistic-hero-banner {
   background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 60%, #1d4ed8 100%);
   color: #ffffff;
-  padding: 1.75rem 2rem;
-  border-bottom: 4px solid #fbbf24;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.2);
+  padding: 0.85rem 1.5rem;
+  border-bottom: 3px solid #fbbf24;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.18);
+}
+
+.holistic-hero-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  margin-top: 0.3rem;
+}
+
+.holistic-hero-user {
+  font-size: 0.84rem;
+  color: #e2e8f0;
+  font-weight: 700;
+}
+
+.holistic-sync-pill {
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 0.18rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.22);
+  border: 1px solid #34d399;
+  color: #d1fae5;
+}
+
+.holistic-sync-pill.saving {
+  background: rgba(245, 158, 11, 0.25);
+  border-color: #fbbf24;
+  color: #fef3c7;
+}
+
+.holistic-sync-pill.unsaved {
+  background: rgba(239, 68, 68, 0.28);
+  border-color: #f87171;
+  color: #fee2e2;
+}
+
+.holistic-compact-select {
+  background: rgba(255, 255, 255, 0.95);
+  color: #0f172a;
+  border: none;
+  padding: 0.45rem 0.7rem;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 0.84rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.holistic-save-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  border: 2px solid #a7f3d0;
+  padding: 0.45rem 1.05rem;
+  border-radius: 10px;
+  font-weight: 900;
+  font-size: 0.86rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: inherit;
+}
+
+.holistic-save-btn.dirty {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+/* Shared dropdown menu used for all collapsed secondary actions */
+.holistic-menu-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.holistic-menu-trigger {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
+  padding: 0.45rem 0.9rem;
+  border-radius: 10px;
+  font-weight: 900;
+  font-size: 0.86rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.holistic-menu-trigger.dark {
+  background: #f1f5f9;
+  color: #0f172a;
+  border: 1.5px solid #cbd5e1;
+  padding: 0.58rem 0.95rem;
+  font-size: 0.84rem;
+}
+
+.holistic-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 998;
+  background: transparent;
+}
+
+.holistic-menu-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 250px;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.22);
+  padding: 0.4rem;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  direction: rtl;
+}
+
+.holistic-menu-item {
+  background: transparent;
+  border: none;
+  color: #0f172a;
+  text-align: right;
+  padding: 0.6rem 0.8rem;
+  border-radius: 9px;
+  font-weight: 800;
+  font-size: 0.86rem;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: inherit;
+  display: block;
+}
+
+.holistic-menu-item:hover {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.holistic-menu-item.selected {
+  background: #dbeafe;
+  color: #1e3a8a;
+}
+
+.holistic-menu-item.danger {
+  color: #b91c1c;
+}
+
+.holistic-menu-item.danger:hover {
+  background: #fee2e2;
+}
+
+.holistic-ai-link-btn {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+  color: #ffffff !important;
+  border: 2px solid #fbbf24 !important;
+}
+
+.holistic-legend-toggle {
+  background: #fffbeb;
+  border: 1.5px solid #fde68a;
+  color: #78350f;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.82rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.classes-strip-label {
+  font-weight: 900;
+  font-size: 0.84rem;
+  color: #0f172a;
+  margin-left: 0.2rem;
+}
+
+.classes-strip-sep {
+  width: 1.5px;
+  height: 24px;
+  background: #cbd5e1;
+  margin: 0 0.5rem;
+}
+
+.class-chip-btn.grade {
+  min-width: 42px;
+  justify-content: center;
 }
 
 .holistic-hero-inner {
