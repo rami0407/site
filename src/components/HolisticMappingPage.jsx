@@ -52,6 +52,44 @@ import './HolisticMappingPage.css';
 
 const INITIAL_TEACHERS = getAllTeachers();
 
+const SINGLE_SELECT_DEFAULT_COL_IDS = new Set([
+  'family_status',
+  'economic_status',
+  'social_status',
+  'attendance_status'
+]);
+
+const isColumnMultiSelect = (col) => {
+  if (!col) return true;
+  if (typeof col.allowMultiple === 'boolean') return col.allowMultiple;
+  if (SINGLE_SELECT_DEFAULT_COL_IDS.has(col.id)) return false;
+  const title = col.titleHe || '';
+  if (
+    title.includes('מצב משפחתי') ||
+    title.includes('מצב כלכלי') ||
+    title.includes('מצב חברתי') ||
+    title.includes('נוכחות')
+  ) {
+    return false;
+  }
+  return true;
+};
+
+const isExclusiveNeutralOption = (val) => {
+  if (!val || typeof val !== 'string') return false;
+  const t = val.trim();
+  return (
+    t === 'ללא מענה' ||
+    t === 'ללא מענה / תקין' ||
+    t === 'אין צורך' ||
+    t === 'אין רגישות / תקין' ||
+    t === 'טרם שובץ' ||
+    t.startsWith('ללא מענה') ||
+    t.startsWith('אין צורך') ||
+    t.startsWith('אין רגישות')
+  );
+};
+
 // Universal Helper to parse single or multiple holistic answers safely
 export const normalizeHolisticValue = (rawVal) => {
   if (!rawVal) return [];
@@ -157,6 +195,8 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   const cloudLoadedKeysRef = useRef(new Set());
   const cloudUpdatedMsRef = useRef({});
   const configUpdatedMsRef = useRef(0);
+  const dirtyConfigRef = useRef(false);
+  const configSaveTimerRef = useRef(null);
   const lastServerUpdateRef = useRef({});
 
   // Modals State
@@ -235,9 +275,10 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     return () => unsub();
   }, [isAdminEmbed]);
 
-  // Helper to apply incoming cloud config from authoritative shared channel (immune to client clock skew!)
+  // Helper to apply incoming cloud config from authoritative shared channel (never overwrites in-flight local option/column edits!)
   const applyIncomingCloudConfig = (data) => {
     if (!data || typeof data !== 'object') return false;
+    if (dirtyConfigRef.current) return false;
     const incomingMs = data.updatedMs || (data.updatedAt ? Date.parse(data.updatedAt) : 0) || Date.now();
     configUpdatedMsRef.current = Math.max(configUpdatedMsRef.current, incomingMs);
 
@@ -474,7 +515,10 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
               const d = change.doc.data();
               if (!d || !d._logicalId) return;
               if (d._logicalId === 'holistic_cfg_global_v2') {
-                applyIncomingCloudConfig(d);
+                const incCfgMs = d.updatedMs || (d.updatedAt ? Date.parse(d.updatedAt) : 0) || 0;
+                if (incCfgMs >= configUpdatedMsRef.current) {
+                  applyIncomingCloudConfig(d);
+                }
               } else if (d._logicalId.startsWith('holistic_cls_') && d.academicYear === selectedYear) {
                 applyIncomingClassDoc(d, 'shared');
               }
@@ -674,10 +718,11 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     setTimeout(() => setSaveToast(''), 3500);
   };
 
-  const saveGlobalConfig = async (updatedFields = {}) => {
+  const saveGlobalConfig = async (updatedFields = {}, debounceMs = 0) => {
     const nowIso = new Date().toISOString();
     const nowMs = Date.now();
     const authorName = activeTeacher?.nameHe || activeTeacher?.nameAr || 'מנהל';
+    dirtyConfigRef.current = true;
     configUpdatedMsRef.current = nowMs;
     const nextConfig = JSON.parse(JSON.stringify({
       academicYears,
@@ -694,23 +739,39 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     }));
     setSecureStorage('musherfe_holistic_config_v2', nextConfig);
     setCloudSyncStatus('saving');
-    try {
-      // Primary save via direct HTTPS REST (bypasses all school firewall WebChannel hangs!)
-      const restRes = await firestoreRestSaveDoc('students', 'holistic_cfg_global_v2', nextConfig);
-      if (restRes?.updateTime) {
-        lastServerUpdateRef.current['holistic_cfg_global_v2'] = restRes.updateTime;
+
+    const executeCloudConfigSave = async () => {
+      try {
+        // Primary save via direct HTTPS REST (bypasses all school firewall WebChannel hangs & 403 update blocks!)
+        const restRes = await firestoreRestSaveDoc('students', 'holistic_cfg_global_v2', nextConfig);
+        if (restRes?.updateTime) {
+          lastServerUpdateRef.current['holistic_cfg_global_v2'] = restRes.updateTime;
+        }
+        if (auth?.currentUser) {
+          setDoc(doc(db, 'students', 'holistic_cfg_global_v2'), nextConfig, { merge: true }).catch(() => {});
+          setDoc(doc(db, 'holistic_mapping_config', 'global_settings_v2'), nextConfig, { merge: true }).catch(() => {});
+        }
+        dirtyConfigRef.current = false;
+        setCloudSyncStatus('synced');
+        setLastUpdatedBy(authorName);
+        setLastSavedAt(new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      } catch (e) {
+        dirtyConfigRef.current = false;
+        console.warn('Cloud config save error:', e);
+        setCloudSyncStatus('local_vault');
+        triggerToast(`⚠️ שגיאה בשמירת ההגדרות לענן: ${e?.message || 'בדוק חיבור אינטרנט'}`);
       }
-      // Non-blocking SDK mirror
-      setDoc(doc(db, 'students', 'holistic_cfg_global_v2'), nextConfig, { merge: true }).catch(() => {});
-      setDoc(doc(db, 'holistic_mapping_config', 'global_settings_v2'), nextConfig, { merge: true }).catch(() => {});
-      setCloudSyncStatus('synced');
-      setLastUpdatedBy(authorName);
-      setLastSavedAt(new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-    } catch (e) {
-      console.warn('Cloud config save error:', e);
-      setCloudSyncStatus('local_vault');
-      triggerToast(`⚠️ שגיאה בשמירת ההגדרות לענן: ${e?.message || 'בדוק חיבור אינטרנט'}`);
+    };
+
+    if (configSaveTimerRef.current) {
+      clearTimeout(configSaveTimerRef.current);
+      configSaveTimerRef.current = null;
     }
+    if (debounceMs > 0) {
+      configSaveTimerRef.current = setTimeout(executeCloudConfigSave, debounceMs);
+      return;
+    }
+    await executeCloudConfigSave();
   };
 
   const pushClassToCloudNow = async (classId, studentsToPush, yearToSave = selectedYear) => {
@@ -1368,7 +1429,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
 
     const nextCols = [...holisticColumns, newCol];
     setHolisticColumns(nextCols);
-    saveGlobalConfig({ holisticColumns: nextCols });
+    saveGlobalConfig({ holisticColumns: nextCols }, 350);
     setNewColTitleHe('');
     triggerToast('✅ עמודה חדשה נוספה למיפוי הבית-ספרי!');
   };
@@ -1378,7 +1439,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     if (!window.confirm(`האם אתה בטוח שברצונך למחוק את העמודה "${colObj?.titleHe || colId}" מכל המיפוי?`)) return;
     const nextCols = holisticColumns.filter((c) => c.id !== colId);
     setHolisticColumns(nextCols);
-    saveGlobalConfig({ holisticColumns: nextCols });
+    saveGlobalConfig({ holisticColumns: nextCols }, 350);
     if (editingColForOptions?.id === colId) setEditingColForOptions(null);
     triggerToast('🗑️ העמודה הוסרה בהצלחה.');
   };
@@ -1397,32 +1458,54 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
         : col
     );
     setHolisticColumns(nextCols);
-    saveGlobalConfig({ holisticColumns: nextCols });
+    saveGlobalConfig({ holisticColumns: nextCols }, 350);
     triggerToast('✅ שם השדה / הקטגוריה עודכן בהצלחה!');
   };
 
+  const handleSetColumnMultiMode = (colId, allowMulti) => {
+    const nextCols = holisticColumns.map((col) =>
+      col.id === colId ? { ...col, allowMultiple: Boolean(allowMulti) } : col
+    );
+    setHolisticColumns(nextCols);
+    saveGlobalConfig({ holisticColumns: nextCols });
+    triggerToast(
+      allowMulti
+        ? '☑️ העמודה הוגדרה לבחירה מרובה (ניתן לבחור מספר אפשרויות במקביל)!'
+        : '🔘 העמודה הוגדרה לבחירה יחידה בלבד (אפשרות אחת ללא סתירות)!'
+    );
+  };
+
   const handleAddOptionToColumn = (colId) => {
-    if (!newOptionLabel.trim()) return;
-    const cleanLabel = newOptionLabel.trim();
+    let cleanLabel = (newOptionLabel || '').trim();
+    if (!cleanLabel) {
+      const prompted = window.prompt('➕ הקלד את אפשרות המענה החדשה להוספה לשדה זה (اكتب الاحتمال الجديد):');
+      if (!prompted || !prompted.trim()) return;
+      cleanLabel = prompted.trim();
+    }
+    let wasDuplicate = false;
     const nextCols = holisticColumns.map((col) => {
       if (col.id !== colId) return col;
-      const exists = (col.options || []).some((o) => o.value === cleanLabel);
+      const exists = (col.options || []).some((o) => o.value === cleanLabel || o.labelHe === cleanLabel);
       if (exists) {
-        alert('אפשרות מענה זו כבר קיימת בשדה זה.');
+        wasDuplicate = true;
         return col;
       }
       return {
         ...col,
         options: [
           ...(col.options || []),
-          { value: cleanLabel, labelHe: cleanLabel, color: newOptionColor }
+          { value: cleanLabel, labelHe: cleanLabel, color: newOptionColor || 'green' }
         ]
       };
     });
+    if (wasDuplicate) {
+      alert('אפשרות מענה זו כבר קיימת בשדה זה.');
+      return;
+    }
     setHolisticColumns(nextCols);
-    saveGlobalConfig({ holisticColumns: nextCols });
+    saveGlobalConfig({ holisticColumns: nextCols }, 350);
     setNewOptionLabel('');
-    triggerToast('✅ אפשרות מענה חדשה נוספה לשדה!');
+    triggerToast(`✅ נוספה אפשרות חדשה: "${cleanLabel}" ונשמרה בענן!`);
   };
 
   // Edit / Replace an existing option's label or color (and update all students who had the old label)
@@ -1447,7 +1530,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     });
 
     setHolisticColumns(nextCols);
-    saveGlobalConfig({ holisticColumns: nextCols });
+    saveGlobalConfig({ holisticColumns: nextCols }, 350);
 
     // If the option text was changed/replaced, automatically update students across classes who had the old value
     if (oldValToReplace && oldValToReplace !== cleanLabel) {
@@ -1489,7 +1572,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
       return { ...col, options: opts };
     });
     setHolisticColumns(nextCols);
-    saveGlobalConfig({ holisticColumns: nextCols });
+    saveGlobalConfig({ holisticColumns: nextCols }, 350);
   };
 
   const handleRemoveOptionFromColumn = (colId, optValue) => {
@@ -1502,7 +1585,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
       };
     });
     setHolisticColumns(nextCols);
-    saveGlobalConfig({ holisticColumns: nextCols });
+    saveGlobalConfig({ holisticColumns: nextCols }, 350);
     triggerToast('🗑️ האפשרות הוסרה מהשדה.');
   };
 
@@ -1517,7 +1600,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
       col.id === colId ? { ...col, titleHe: defaultCol.titleHe, groupHe: defaultCol.groupHe, options: [...defaultCol.options] } : col
     );
     setHolisticColumns(nextCols);
-    saveGlobalConfig({ holisticColumns: nextCols });
+    saveGlobalConfig({ holisticColumns: nextCols }, 350);
     triggerToast('🔄 אפשרויות ברירת המחדל שוחזרו!');
   };
 
@@ -3212,7 +3295,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                       {holisticColumns.map((col) => (
                         <th key={`sub_${col.id}`}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', flexWrap: 'wrap' }}>
-                            <span>בחירה (אפשרות אחת או יותר)</span>
+                            <span>{isColumnMultiSelect(col) ? '☑️ בחירה מרובה' : '🔘 בחירה יחידה'}</span>
                             {userCapabilities.canManageSchema && (
                               <button
                                 type="button"
@@ -3305,7 +3388,8 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                           {/* Holistic Multi-Selection Pill Cells */}
                           {holisticColumns.map((col) => {
                             const currentVal = stu[col.id];
-                            const selectedValues = normalizeHolisticValue(currentVal);
+                            const rawVals = normalizeHolisticValue(currentVal);
+                            const selectedValues = isColumnMultiSelect(col) ? rawVals : rawVals.slice(0, 1);
                             const isOpen = activeMultiSelect?.studentId === stu.id && activeMultiSelect?.colId === col.id;
                             const pillStyle = getPillStyleForValue(col, selectedValues);
 
@@ -5782,7 +5866,9 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
         const targetCol = holisticColumns.find((c) => c.id === activeMultiSelect.colId) || activeMultiSelect.col;
         if (!targetStu || !targetCol) return null;
 
-        const selectedValues = normalizeHolisticValue(targetStu[targetCol.id]);
+        const allowMulti = isColumnMultiSelect(targetCol);
+        const rawSelectedValues = normalizeHolisticValue(targetStu[targetCol.id]);
+        const selectedValues = allowMulti ? rawSelectedValues : rawSelectedValues.slice(0, 1);
         const allOptions = targetCol.options || [];
 
         // Identify any custom values currently on the student that aren't in the schema options
@@ -5798,10 +5884,17 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
 
         const toggleOption = (val) => {
           let next;
-          if (selectedValues.includes(val)) {
+          if (!allowMulti) {
+            // Single-choice column (e.g. מצב משפחתי): mutually exclusive — selecting one replaces the other!
+            next = selectedValues.includes(val) ? [] : [val];
+          } else if (selectedValues.includes(val)) {
             next = selectedValues.filter((v) => v !== val);
+          } else if (isExclusiveNeutralOption(val)) {
+            // Selecting "ללא מענה" / "אין צורך" clears active treatments so there is no contradiction
+            next = [val];
           } else {
-            next = [...selectedValues, val];
+            // Selecting an active treatment/need automatically unchecks "ללא מענה" / "אין צורך"
+            next = [...selectedValues.filter((v) => !isExclusiveNeutralOption(v)), val];
           }
           handleUpdateStudentField(targetStu.id, targetCol.id, next);
         };
@@ -5814,8 +5907,14 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
           if (e) e.preventDefault();
           const clean = (multiSelectCustomInput || '').trim();
           if (!clean) return;
-          if (!selectedValues.includes(clean)) {
-            handleUpdateStudentField(targetStu.id, targetCol.id, [...selectedValues, clean]);
+          if (!allowMulti) {
+            handleUpdateStudentField(targetStu.id, targetCol.id, [clean]);
+          } else if (!selectedValues.includes(clean)) {
+            handleUpdateStudentField(
+              targetStu.id,
+              targetCol.id,
+              [...selectedValues.filter((v) => !isExclusiveNeutralOption(v)), clean]
+            );
           }
           setMultiSelectCustomInput('');
         };
@@ -5893,7 +5992,9 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                   }}>
                     {selectedValues.length}
                   </span>
-                  <span style={{ fontSize: '0.74rem', color: '#64748b' }}>(ניתן לסמן מספר אפשרויות)</span>
+                  <span style={{ fontSize: '0.74rem', color: '#64748b' }}>
+                    {allowMulti ? '(בחירה מרובה — ניתן לסמן מספר מענים)' : '(בחירה יחידה — אפשרות אחת בלבד)'}
+                  </span>
                 </div>
                 {selectedValues.length > 0 && (
                   <button
@@ -5987,19 +6088,19 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                           style={{
                             width: '20px',
                             height: '20px',
-                            borderRadius: '6px',
+                            borderRadius: allowMulti ? '6px' : '50%',
                             border: isChecked ? '2px solid #2563eb' : '2px solid #cbd5e1',
                             background: isChecked ? '#2563eb' : '#ffffff',
                             color: '#ffffff',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            fontSize: '0.78rem',
+                            fontSize: allowMulti ? '0.78rem' : '0.62rem',
                             fontWeight: 900,
                             flexShrink: 0
                           }}
                         >
-                          {isChecked ? '✓' : ''}
+                          {isChecked ? (allowMulti ? '✓' : '●') : ''}
                         </div>
                         <span
                           style={{
@@ -6325,6 +6426,57 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                     🔄 איפוס לברירת מחדל
                   </button>
                 )}
+              </div>
+
+              {/* Selection Mode Switcher: Single Choice vs Multi Choice */}
+              <div
+                style={{
+                  background: '#f8fafc',
+                  border: '1.5px solid #cbd5e1',
+                  padding: '0.85rem 1rem',
+                  borderRadius: '14px',
+                  marginBottom: '1rem'
+                }}
+              >
+                <label style={{ display: 'block', fontWeight: 900, fontSize: '0.84rem', color: '#0f172a', marginBottom: '0.5rem' }}>
+                  🎯 סוג הבחירה בעמודה זו (نوع الاختيار في هذا العمود — منع التعارض أو السماح بتعدد العلاجات):
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.6rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => handleSetColumnMultiMode(activeCol.id, false)}
+                    style={{
+                      padding: '0.65rem 0.85rem',
+                      borderRadius: '10px',
+                      border: !isColumnMultiSelect(activeCol) ? '2px solid #2563eb' : '1.5px solid #cbd5e1',
+                      background: !isColumnMultiSelect(activeCol) ? '#eff6ff' : '#ffffff',
+                      color: !isColumnMultiSelect(activeCol) ? '#1e40af' : '#475569',
+                      fontWeight: 900,
+                      fontSize: '0.82rem',
+                      cursor: 'pointer',
+                      textAlign: 'right'
+                    }}
+                  >
+                    🔘 בחירה יחידה בלבד (אפשרות אחת — למצבים סותרים)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSetColumnMultiMode(activeCol.id, true)}
+                    style={{
+                      padding: '0.65rem 0.85rem',
+                      borderRadius: '10px',
+                      border: isColumnMultiSelect(activeCol) ? '2px solid #059669' : '1.5px solid #cbd5e1',
+                      background: isColumnMultiSelect(activeCol) ? '#ecfdf5' : '#ffffff',
+                      color: isColumnMultiSelect(activeCol) ? '#065f46' : '#475569',
+                      fontWeight: 900,
+                      fontSize: '0.82rem',
+                      cursor: 'pointer',
+                      textAlign: 'right'
+                    }}
+                  >
+                    ☑️ בחירה מרובה (מספר מענים / טיפולים במקביל)
+                  </button>
+                </div>
               </div>
 
               {/* Section 2: Add New Answer Option */}
