@@ -3526,17 +3526,25 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                       <th className="sticky-col" rowSpan={2}>
                         שם התלמיד ({filteredStudents.length})
                       </th>
-                      {displayedHolisticColumns.map((col) => (
-                        <th
-                          key={col.id}
-                          style={{
-                            background: col.groupHe === 'קבלת מענים' ? '#fef3c7' : '#fde68a'
-                          }}
-                        >
-                          <div style={{ fontSize: '0.72rem', color: '#78350f', fontWeight: 700 }}>{col.groupHe}</div>
-                          <div>{col.titleHe}</div>
-                        </th>
-                      ))}
+                      {displayedHolisticColumns.map((col) => {
+                        const isColActive = activeMultiSelect?.colId === col.id;
+                        return (
+                          <th
+                            key={col.id}
+                            style={{
+                              background: isColActive
+                                ? '#dbeafe'
+                                : col.groupHe === 'קבלת מענים'
+                                ? '#fef3c7'
+                                : '#fde68a',
+                              boxShadow: isColActive ? 'inset 0 -3px 0 #2563eb' : undefined
+                            }}
+                          >
+                            <div style={{ fontSize: '0.72rem', color: isColActive ? '#1e40af' : '#78350f', fontWeight: 700 }}>{col.groupHe}</div>
+                            <div style={{ color: isColActive ? '#1e3a8a' : undefined }}>{col.titleHe}</div>
+                          </th>
+                        );
+                      })}
                       {userCapabilities.canManageSchema && (
                         <th rowSpan={2} className="no-print">
                           פעולות
@@ -3583,7 +3591,10 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                       const avgTl = getTrafficLightStyle(avgScore);
 
                       return (
-                        <tr key={stu.id}>
+                        <tr
+                          key={stu.id}
+                          className={activeMultiSelect?.studentId === stu.id ? 'active-editing-row' : undefined}
+                        >
                           {/* Sticky Student Name */}
                           <td className="sticky-col" style={{ textAlign: 'right', fontWeight: 900 }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.4rem' }}>
@@ -4625,7 +4636,10 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                       const overallTl = getTrafficLightStyle(overallAnnualAvg);
 
                       return (
-                        <tr key={stu.id}>
+                        <tr
+                          key={stu.id}
+                          className={activeMultiSelect?.studentId === stu.id ? 'active-editing-row' : undefined}
+                        >
                           <td className="sticky-col" style={{ textAlign: 'right', fontWeight: 900 }}>
                             <span
                               onClick={() => {
