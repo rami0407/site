@@ -198,6 +198,12 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   const dirtyConfigRef = useRef(false);
   const configSaveTimerRef = useRef(null);
   const lastServerUpdateRef = useRef({});
+  const lastServerMsRef = useRef({});
+  const lastLocalEditMsRef = useRef({});
+  const lastLocalCfgEditMsRef = useRef(0);
+  const localEditSeqRef = useRef({});
+  const classStudentsMapRef = useRef({});
+  classStudentsMapRef.current = classStudentsMap;
 
   // Horizontal Navigation, Column Group Filter & Quick-Fill Student Mode State
   const [selectedColGroupFilter, setSelectedColGroupFilter] = useState('all');
@@ -283,10 +289,19 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     return () => unsub();
   }, [isAdminEmbed]);
 
-  // Helper to apply incoming cloud config from authoritative shared channel (never overwrites in-flight local option/column edits!)
-  const applyIncomingCloudConfig = (data) => {
+  // Helper to apply incoming cloud config using authoritative Google server `updateTime` (never overwrites in-flight local edits!)
+  const applyIncomingCloudConfig = (data, serverMs = 0, forceApply = false) => {
     if (!data || typeof data !== 'object') return false;
-    if (dirtyConfigRef.current) return false;
+    if (!forceApply && (dirtyConfigRef.current || Date.now() - lastLocalCfgEditMsRef.current < 4500)) {
+      return false;
+    }
+    const prevCfgServerMs = lastServerMsRef.current['holistic_cfg_global_v2'] || 0;
+    if (!forceApply && serverMs > 0 && prevCfgServerMs > 0 && serverMs <= prevCfgServerMs) {
+      return false;
+    }
+    if (serverMs > 0) {
+      lastServerMsRef.current['holistic_cfg_global_v2'] = Math.max(prevCfgServerMs, serverMs);
+    }
     const incomingMs = data.updatedMs || (data.updatedAt ? Date.parse(data.updatedAt) : 0) || Date.now();
     configUpdatedMsRef.current = Math.max(configUpdatedMsRef.current, incomingMs);
 
@@ -324,7 +339,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     return true;
   };
 
-  // Load Schema & Permissions Config from Encrypted Storage + Firestore Cloud Database (Dual-Channel Live Sync)
+  // Hydrate initial Schema & Permissions Config from Encrypted Storage (Cloud config is resolved via unified REST server-time sync below)
   useEffect(() => {
     const localConf = getSecureStorage('musherfe_holistic_config_v2', null);
     if (localConf && typeof localConf === 'object') {
@@ -353,31 +368,11 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
         syncCustomTeachersList(localConf.customTeachers);
       }
     }
-
-    const unsubs = [];
-    try {
-      // Primary live channel in 'students' collection (single authoritative source for ALL teachers, Jihan & Principal!)
-      const sharedConfRef = doc(db, 'students', 'holistic_cfg_global_v2');
-      unsubs.push(
-        onSnapshot(
-          sharedConfRef,
-          (snap) => {
-            if (snap.exists()) {
-              applyIncomingCloudConfig(snap.data());
-            }
-          },
-          () => {}
-        )
-      );
-    } catch {
-      setCloudSyncStatus('local_vault');
-    }
-    return () => unsubs.forEach((u) => u && u());
   }, []);
 
   const seededCloudKeysRef = useRef(new Set());
 
-  // Load All Classes Data for the Selected Academic Year (Conflict-Free Realtime Cloud DB + Encrypted IndexedDB Vault)
+  // Load All Classes Data for the Selected Academic Year (Server-Clock Monotonic Cloud Sync + Encrypted IndexedDB Vault)
   useEffect(() => {
     let isMounted = true;
     const initialFallbackMap = {};
@@ -396,14 +391,15 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     setClassStudentsMap((prev) => {
       const next = { ...prev };
       Object.keys(initialFallbackMap).forEach((k) => {
-        if (!cloudLoadedKeysRef.current.has(k) && !next[k]) {
+        if (!cloudLoadedKeysRef.current.has(k) && !dirtyClassKeysRef.current.has(k) && !next[k]) {
           next[k] = initialFallbackMap[k];
         }
       });
+      classStudentsMapRef.current = next;
       return next;
     });
 
-    // 2. Hydrate from Encrypted IndexedDB Vault ONLY for classes that haven't arrived from Cloud DB yet!
+    // 2. Hydrate from Encrypted IndexedDB Vault ONLY for classes that haven't arrived from Cloud DB or been edited yet!
     Promise.all(
       SCHOOL_19_CLASSES.map(async (cls) => {
         const key = `${selectedYear}_${cls.id}`;
@@ -421,17 +417,17 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
       setClassStudentsMap((prev) => {
         const next = { ...prev };
         results.forEach((item) => {
-          // NEVER overwrite a class if Cloud DB already delivered live data for this class!
-          if (item && !cloudLoadedKeysRef.current.has(item.key)) {
+          if (item && !cloudLoadedKeysRef.current.has(item.key) && !dirtyClassKeysRef.current.has(item.key)) {
             next[item.key] = item.students;
           }
         });
+        classStudentsMapRef.current = next;
         return next;
       });
     });
 
-    // Helper to process incoming Cloud document for a class
-    const applyIncomingClassDoc = (d, sourceCollection) => {
+    // Helper to process incoming Cloud document for a class using ONLY Google server `updateTime` (100% immune to laptop clock skew!)
+    const applyIncomingClassDoc = (d, serverMs = 0) => {
       if (!isMounted || !d || d.academicYear !== selectedYear || !Array.isArray(d.students) || d.students.length === 0) {
         return;
       }
@@ -439,124 +435,74 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
       if (isOldDemo) return;
 
       const key = `${d.academicYear}_${d.classId}`;
-      const incomingMs = d.updatedMs || (d.updatedAt ? Date.parse(d.updatedAt) : 0) || 1;
-      const currentMs = cloudUpdatedMsRef.current[key] || 0;
+      const docId = `holistic_cls_${key}`;
 
-      // Always accept live updates from the authoritative 'shared' channel (immune to device clock skew between Jihan/teachers and Principal!).
-      // Only gate legacy channel by timestamp.
-      const shouldAccept = sourceCollection === 'shared'
-        ? true
-        : (!cloudLoadedKeysRef.current.has(key) || incomingMs > currentMs);
+      // NEVER overwrite a class while the teacher has unsaved/in-flight edits or clicked within the last 4.5 seconds!
+      if (
+        dirtyClassKeysRef.current.has(key) ||
+        pendingAutoSaveDataRef.current[key] ||
+        Date.now() - (lastLocalEditMsRef.current[key] || 0) < 4500
+      ) {
+        return;
+      }
 
-      if (shouldAccept) {
-        cloudLoadedKeysRef.current.add(key);
-        seededCloudKeysRef.current.add(key);
-        cloudUpdatedMsRef.current[key] = Math.max(currentMs, incomingMs);
+      const prevServerMs = lastServerMsRef.current[docId] || 0;
+      if (cloudLoadedKeysRef.current.has(key) && serverMs > 0 && prevServerMs > 0 && serverMs <= prevServerMs) {
+        return;
+      }
 
-        setClassStudentsMap((prev) => {
-          const localList = prev[key];
-          if (!dirtyClassKeysRef.current.has(key) || !Array.isArray(localList)) {
-            return { ...prev, [key]: d.students };
-          }
-          // Merge student by student so in-flight local inputs are not overwritten while another teacher saves
-          const merged = d.students.map((incStu) => {
-            const locStu = localList.find((s) => s.id === incStu.id);
-            if (!locStu) return incStu;
-            const locTime = locStu.updatedAt ? Date.parse(locStu.updatedAt) : 0;
-            const incTime = incStu.updatedAt ? Date.parse(incStu.updatedAt) : 0;
-            return locTime > incTime ? locStu : incStu;
-          });
-          return { ...prev, [key]: merged };
-        });
-        setEncryptedIDB(`holistic_students_v2_${key}`, d.students);
-        setCloudSyncStatus('synced');
+      cloudLoadedKeysRef.current.add(key);
+      seededCloudKeysRef.current.add(key);
+      if (serverMs > 0) {
+        lastServerMsRef.current[docId] = Math.max(prevServerMs, serverMs);
+      }
 
-        if (d.updatedBy) setLastUpdatedBy(d.updatedBy);
-        if (d.updatedAt) {
-          try {
-            setLastSavedAt(new Date(d.updatedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-          } catch {}
-        }
+      setClassStudentsMap((prev) => {
+        const next = { ...prev, [key]: d.students };
+        classStudentsMapRef.current = next;
+        return next;
+      });
+      setEncryptedIDB(`holistic_students_v2_${key}`, d.students);
+      setCloudSyncStatus('synced');
 
-        // If this came from legacy 'holistic_mapping_classes', mirror it immediately to 'students/holistic_cls_...' so all teachers receive it live!
-        if (sourceCollection === 'legacy') {
-          setDoc(doc(db, 'students', `holistic_cls_${key}`), {
-            academicYear: d.academicYear,
-            classId: d.classId,
-            students: d.students,
-            updatedAt: d.updatedAt || new Date().toISOString(),
-            updatedMs: incomingMs,
-            updatedBy: d.updatedBy || 'מנהל'
-          }, { merge: true }).catch(() => {});
-        }
+      if (d.updatedBy) setLastUpdatedBy(d.updatedBy);
+      if (d.updatedAt) {
+        try {
+          setLastSavedAt(new Date(d.updatedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+        } catch {}
       }
     };
 
-    // 3. Subscribe in REAL TIME via BOTH direct HTTPS REST polling (works 100% through school firewalls!) AND Firestore onSnapshot
-    const unsubs = [];
-    SCHOOL_19_CLASSES.forEach((cls) => {
-      const key = `${selectedYear}_${cls.id}`;
-      const sharedDocRef = doc(db, 'students', `holistic_cls_${key}`);
-      const u = onSnapshot(
-        sharedDocRef,
-        (docSnap) => {
-          if (!isMounted) return;
-          if (docSnap.metadata?.fromCache && cloudLoadedKeysRef.current.has(key)) return;
-          if (docSnap.exists()) {
-            applyIncomingClassDoc(docSnap.data(), 'shared');
-          }
-        },
-        () => {}
-      );
-      unsubs.push(u);
-    });
-
-    // Real-time WebSocket listener on teacher/Jihan revision stream (`_logicalId > ""`) for <200ms live push!
-    try {
-      const revQuery = query(collection(db, 'students'), where('_logicalId', '>', ''));
-      const uRev = onSnapshot(
-        revQuery,
-        (snap) => {
-          if (!isMounted || snap.metadata?.fromCache) return;
-          snap.docChanges().forEach((change) => {
-            if (change.type === 'added' || change.type === 'modified') {
-              const d = change.doc.data();
-              if (!d || !d._logicalId) return;
-              if (d._logicalId === 'holistic_cfg_global_v2') {
-                const incCfgMs = d.updatedMs || (d.updatedAt ? Date.parse(d.updatedAt) : 0) || 0;
-                if (incCfgMs >= configUpdatedMsRef.current) {
-                  applyIncomingCloudConfig(d);
-                }
-              } else if (d._logicalId.startsWith('holistic_cls_') && d.academicYear === selectedYear) {
-                applyIncomingClassDoc(d, 'shared');
-              }
-            }
-          });
-        },
-        () => {}
-      );
-      unsubs.push(uRev);
-    } catch {}
+    let isSyncingRest = false;
+    let pendingResync = false;
+    let wakeupTimer = null;
 
     const syncFromRestNow = async () => {
+      if (isSyncingRest) {
+        pendingResync = true;
+        return;
+      }
+      isSyncingRest = true;
       try {
         const docs = await firestoreRestListHolisticDocs();
         if (!isMounted || !Array.isArray(docs)) return;
         const foundYearKeys = new Set();
         docs.forEach((item) => {
           if (item.id === 'holistic_cfg_global_v2' && item.data) {
-            if (item.updateTime && lastServerUpdateRef.current[item.id] !== item.updateTime) {
-              lastServerUpdateRef.current[item.id] = item.updateTime;
-              applyIncomingCloudConfig(item.data);
+            const prevCfgMs = lastServerMsRef.current[item.id] || 0;
+            if (!prevCfgMs || (item.ms && item.ms > prevCfgMs)) {
+              if (item.updateTime) lastServerUpdateRef.current[item.id] = item.updateTime;
+              applyIncomingCloudConfig(item.data, item.ms || 0);
             }
             return;
           }
           if (item.id.startsWith('holistic_cls_') && item.data && item.data.academicYear === selectedYear) {
             const key = `${item.data.academicYear}_${item.data.classId}`;
             foundYearKeys.add(key);
-            if (!item.updateTime || lastServerUpdateRef.current[item.id] !== item.updateTime || !cloudLoadedKeysRef.current.has(key)) {
+            const prevDocMs = lastServerMsRef.current[item.id] || 0;
+            if (!cloudLoadedKeysRef.current.has(key) || (item.ms && item.ms > prevDocMs)) {
               if (item.updateTime) lastServerUpdateRef.current[item.id] = item.updateTime;
-              applyIncomingClassDoc(item.data, 'shared');
+              applyIncomingClassDoc(item.data, item.ms || 0);
             }
           }
         });
@@ -579,20 +525,59 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
         });
       } catch {
         // Ignore transient offline poll errors
+      } finally {
+        isSyncingRest = false;
+        if (pendingResync && isMounted) {
+          pendingResync = false;
+          scheduleRestSync(180);
+        }
       }
     };
 
-    // Immediate HTTPS REST fetch on mount / F5 + automatic 4-second live background sync
+    const scheduleRestSync = (delayMs = 120) => {
+      if (!isMounted) return;
+      if (wakeupTimer) clearTimeout(wakeupTimer);
+      wakeupTimer = setTimeout(() => {
+        wakeupTimer = null;
+        syncFromRestNow();
+      }, delayMs);
+    };
+
+    // Lightweight real-time wakeup listener on revision stream (`_logicalId > ""`) — triggers unified REST server-time resolution!
+    const unsubs = [];
+    try {
+      const revQuery = query(collection(db, 'students'), where('_logicalId', '>', ''));
+      const uRev = onSnapshot(
+        revQuery,
+        (snap) => {
+          if (!isMounted || snap.metadata?.fromCache) return;
+          if (snap.docChanges().some((ch) => ch.type === 'added' || ch.type === 'modified')) {
+            scheduleRestSync(120);
+          }
+        },
+        () => {}
+      );
+      unsubs.push(uRev);
+    } catch {}
+
+    const handleWindowFocusOrOnline = () => scheduleRestSync(80);
+    window.addEventListener('focus', handleWindowFocusOrOnline);
+    window.addEventListener('online', handleWindowFocusOrOnline);
+
+    // Immediate HTTPS REST fetch on mount / F5 + automatic 3.5-second live background sync
     syncFromRestNow();
     const pollInterval = setInterval(() => {
       if (typeof document === 'undefined' || document.visibilityState === 'visible') {
         syncFromRestNow();
       }
-    }, 4000);
+    }, 3500);
 
     return () => {
       isMounted = false;
+      if (wakeupTimer) clearTimeout(wakeupTimer);
       clearInterval(pollInterval);
+      window.removeEventListener('focus', handleWindowFocusOrOnline);
+      window.removeEventListener('online', handleWindowFocusOrOnline);
       unsubs.forEach((u) => u && u());
     };
   }, [selectedYear]);
@@ -731,6 +716,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     const nowMs = Date.now();
     const authorName = activeTeacher?.nameHe || activeTeacher?.nameAr || 'מנהל';
     dirtyConfigRef.current = true;
+    lastLocalCfgEditMsRef.current = nowMs;
     configUpdatedMsRef.current = nowMs;
     const nextConfig = JSON.parse(JSON.stringify({
       academicYears,
@@ -754,6 +740,12 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
         const restRes = await firestoreRestSaveDoc('students', 'holistic_cfg_global_v2', nextConfig);
         if (restRes?.updateTime) {
           lastServerUpdateRef.current['holistic_cfg_global_v2'] = restRes.updateTime;
+        }
+        if (restRes?.ms) {
+          lastServerMsRef.current['holistic_cfg_global_v2'] = Math.max(
+            lastServerMsRef.current['holistic_cfg_global_v2'] || 0,
+            restRes.ms
+          );
         }
         if (auth?.currentUser) {
           setDoc(doc(db, 'students', 'holistic_cfg_global_v2'), nextConfig, { merge: true }).catch(() => {});
@@ -782,7 +774,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     await executeCloudConfigSave();
   };
 
-  const pushClassToCloudNow = async (classId, studentsToPush, yearToSave = selectedYear) => {
+  const pushClassToCloudNow = async (classId, studentsToPush, yearToSave = selectedYear, editSeq = null) => {
     const key = `${yearToSave}_${classId}`;
     const nowIso = new Date().toISOString();
     const nowMs = Date.now();
@@ -791,7 +783,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     cloudLoadedKeysRef.current.add(key);
     cloudUpdatedMsRef.current[key] = nowMs;
 
-    // Strip any undefined fields so Firestore setDoc NEVER throws "Unsupported field value: undefined"
+    // Strip any undefined fields so Firestore NEVER rejects undefined values
     const payload = JSON.parse(JSON.stringify({
       academicYear: yearToSave,
       classId,
@@ -804,17 +796,27 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     setIsSavingCloud(true);
     setCloudSyncStatus('saving');
     try {
-      // 1. Primary write via direct HTTPS REST PATCH (completes in ~150ms even behind strict school firewalls!)
+      // 1. Authoritative write via direct HTTPS REST (SuperAdmin PATCH or Teacher/Jihan POST `rev__` -> 200 OK!)
       const docId = `holistic_cls_${key}`;
       const restRes = await firestoreRestSaveDoc('students', docId, payload);
       if (restRes?.updateTime) {
         lastServerUpdateRef.current[docId] = restRes.updateTime;
       }
-      // 2. Non-blocking SDK mirror
-      setDoc(doc(db, 'students', docId), payload, { merge: true }).catch(() => {});
-      setDoc(doc(db, 'holistic_mapping_classes', key), payload, { merge: true }).catch(() => {});
+      if (restRes?.ms) {
+        lastServerMsRef.current[docId] = Math.max(lastServerMsRef.current[docId] || 0, restRes.ms);
+      }
+      // 2. ONLY mirror via Firebase SDK when authenticated as SuperAdmin (`auth.currentUser`),
+      //    so non-admin browsers NEVER trigger an unauthenticated SDK PERMISSION_DENIED rollback!
+      if (auth?.currentUser) {
+        setDoc(doc(db, 'students', docId), payload, { merge: true }).catch(() => {});
+        setDoc(doc(db, 'holistic_mapping_classes', key), payload, { merge: true }).catch(() => {});
+      }
 
-      dirtyClassKeysRef.current.delete(key);
+      const noNewerLocalEdits =
+        (!editSeq || localEditSeqRef.current[key] === editSeq) && !pendingAutoSaveDataRef.current[key];
+      if (noNewerLocalEdits) {
+        dirtyClassKeysRef.current.delete(key);
+      }
       if (dirtyClassKeysRef.current.size === 0) {
         setHasUnsavedChanges(false);
       }
@@ -845,7 +847,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
         }
         delete pendingAutoSaveDataRef.current[key];
         if (entry) {
-          pushClassToCloudNow(entry.classId, entry.students, entry.year);
+          pushClassToCloudNow(entry.classId, entry.students, entry.year, entry.seq);
         }
       });
     };
@@ -862,9 +864,14 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
 
   const saveClassStudents = (classId, updatedStudents, yearToSave = selectedYear, forceImmediateCloud = false) => {
     const key = `${yearToSave}_${classId}`;
+    const seq = (localEditSeqRef.current[key] || 0) + 1;
+    localEditSeqRef.current[key] = seq;
+    lastLocalEditMsRef.current[key] = Date.now();
+    dirtyClassKeysRef.current.add(key);
     cloudLoadedKeysRef.current.add(key);
 
-    // Instant optimistic update in React State + Local Encrypted DB (0ms delay for the teacher)
+    // Instant synchronous ref + React State + Local Encrypted DB update (0ms delay, zero lost rapid clicks)
+    classStudentsMapRef.current = { ...classStudentsMapRef.current, [key]: updatedStudents };
     setClassStudentsMap((prev) => ({ ...prev, [key]: updatedStudents }));
     setEncryptedIDB(`holistic_students_v2_${key}`, updatedStudents);
 
@@ -874,17 +881,15 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
         delete autoSaveDebounceTimersRef.current[key];
       }
       delete pendingAutoSaveDataRef.current[key];
-      return pushClassToCloudNow(classId, updatedStudents, yearToSave);
+      return pushClassToCloudNow(classId, updatedStudents, yearToSave, seq);
     }
 
     // Automatic Cloud Save is ALWAYS active:
-    dirtyClassKeysRef.current.add(key);
-    pendingAutoSaveDataRef.current[key] = { classId, students: updatedStudents, year: yearToSave };
+    pendingAutoSaveDataRef.current[key] = { classId, students: updatedStudents, year: yearToSave, seq };
     setHasUnsavedChanges(true);
     setCloudSyncStatus('saving');
 
-    // Debounce network write by 250ms so rapid typing doesn't create request collisions,
-    // then immediately broadcasts to all other teachers, Coordinator Jihan & Principal via Firestore onSnapshot
+    // Debounce network write by 220ms so rapid clicks coalesce cleanly into one atomic cloud revision
     if (autoSaveDebounceTimersRef.current[key]) {
       clearTimeout(autoSaveDebounceTimersRef.current[key]);
     }
@@ -892,8 +897,8 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     autoSaveDebounceTimersRef.current[key] = setTimeout(async () => {
       delete autoSaveDebounceTimersRef.current[key];
       delete pendingAutoSaveDataRef.current[key];
-      await pushClassToCloudNow(classId, updatedStudents, yearToSave);
-    }, 250);
+      await pushClassToCloudNow(classId, updatedStudents, yearToSave, seq);
+    }, 220);
   };
 
   // Explicit Manual Save Button Handler (שמירה ידנית / حفظ يدوي الآن)
@@ -904,11 +909,16 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
       const keysToSave = new Set([currentKey, ...Array.from(dirtyClassKeysRef.current)]);
 
       for (const k of keysToSave) {
+        if (autoSaveDebounceTimersRef.current[k]) {
+          clearTimeout(autoSaveDebounceTimersRef.current[k]);
+          delete autoSaveDebounceTimersRef.current[k];
+        }
+        delete pendingAutoSaveDataRef.current[k];
         const [yr, ...clsParts] = k.split('_');
         const cId = clsParts.join('_');
-        const stuList = classStudentsMap[k];
+        const stuList = classStudentsMapRef.current[k] || classStudentsMap[k];
         if (Array.isArray(stuList) && stuList.length > 0) {
-          await pushClassToCloudNow(cId, stuList, yr || selectedYear);
+          await pushClassToCloudNow(cId, stuList, yr || selectedYear, localEditSeqRef.current[k] || null);
         }
       }
 
@@ -926,24 +936,41 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   // Explicit Force Live Refresh / Sync Button Handler (حتلنة فورية / סנכרון מיידי) via Direct HTTPS REST
   const handleForceLiveSync = async () => {
     const key = `${selectedYear}_${selectedClassId}`;
+    const docId = `holistic_cls_${key}`;
     setIsSavingCloud(true);
     setCloudSyncStatus('saving');
     try {
+      // First flush any pending local edit for this class so manual refresh never discards unsaved work!
+      if (pendingAutoSaveDataRef.current[key]) {
+        const pending = pendingAutoSaveDataRef.current[key];
+        if (autoSaveDebounceTimersRef.current[key]) {
+          clearTimeout(autoSaveDebounceTimersRef.current[key]);
+          delete autoSaveDebounceTimersRef.current[key];
+        }
+        delete pendingAutoSaveDataRef.current[key];
+        await pushClassToCloudNow(pending.classId, pending.students, pending.year, pending.seq);
+      }
+
       const [clsRes, confRes] = await Promise.all([
-        firestoreRestGetDoc('students', `holistic_cls_${key}`).catch(() => null),
+        firestoreRestGetDoc('students', docId).catch(() => null),
         firestoreRestGetDoc('students', 'holistic_cfg_global_v2').catch(() => null)
       ]);
 
       if (confRes?.exists && confRes.data) {
         if (confRes.updateTime) lastServerUpdateRef.current['holistic_cfg_global_v2'] = confRes.updateTime;
-        applyIncomingCloudConfig(confRes.data);
+        applyIncomingCloudConfig(confRes.data, confRes.ms || 0, true);
       }
 
       const bestDoc = clsRes?.exists ? clsRes.data : null;
       if (bestDoc && Array.isArray(bestDoc.students) && bestDoc.students.length > 0) {
-        if (clsRes.updateTime) lastServerUpdateRef.current[`holistic_cls_${key}`] = clsRes.updateTime;
+        if (clsRes.updateTime) lastServerUpdateRef.current[docId] = clsRes.updateTime;
+        if (clsRes.ms) lastServerMsRef.current[docId] = Math.max(lastServerMsRef.current[docId] || 0, clsRes.ms);
         cloudLoadedKeysRef.current.add(key);
-        setClassStudentsMap((prev) => ({ ...prev, [key]: bestDoc.students }));
+        setClassStudentsMap((prev) => {
+          const next = { ...prev, [key]: bestDoc.students };
+          classStudentsMapRef.current = next;
+          return next;
+        });
         setEncryptedIDB(`holistic_students_v2_${key}`, bestDoc.students);
         if (bestDoc.updatedBy) setLastUpdatedBy(bestDoc.updatedBy);
         if (bestDoc.updatedAt) {
@@ -1079,7 +1106,9 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
       alert('⛔ אין לך הרשאה לערוך את שדות המיפוי של כיתה זו. רק מחנך הכיתה או ההנהלה רשאים לערוך.');
       return;
     }
-    const updated = currentStudents.map((stu) =>
+    const key = `${selectedYear}_${selectedClassId}`;
+    const latestStudents = classStudentsMapRef.current[key] || currentStudents;
+    const updated = latestStudents.map((stu) =>
       stu.id === studentId ? { ...stu, [fieldId]: newValue, updatedAt: new Date().toISOString() } : stu
     );
     saveClassStudents(selectedClassId, updated);
@@ -6607,13 +6636,15 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
           return (opt.labelHe || opt.value || '').toLowerCase().includes(search);
         });
 
-        const toggleOption = (val) => {
+        const toggleOption = (val, altLabel = null) => {
+          const isCurrentlySelected =
+            selectedValues.includes(val) || (altLabel && selectedValues.includes(altLabel));
           let next;
           if (!allowMulti) {
             // Single-choice column (e.g. מצב משפחתי): mutually exclusive — selecting one replaces the other!
-            next = selectedValues.includes(val) ? [] : [val];
-          } else if (selectedValues.includes(val)) {
-            next = selectedValues.filter((v) => v !== val);
+            next = isCurrentlySelected ? [] : [val];
+          } else if (isCurrentlySelected) {
+            next = selectedValues.filter((v) => v !== val && (!altLabel || v !== altLabel));
           } else if (isExclusiveNeutralOption(val)) {
             // Selecting "ללא מענה" / "אין צורך" clears active treatments so there is no contradiction
             next = [val];
@@ -6788,13 +6819,14 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
 
                 {filteredOptions.map((opt, idx) => {
                   const val = opt.value || opt.labelHe;
-                  const isChecked = selectedValues.includes(val);
+                  const isChecked =
+                    selectedValues.includes(val) || (opt.labelHe && selectedValues.includes(opt.labelHe));
                   const pill = OPTION_PILL_COLORS[opt.color] || OPTION_PILL_COLORS.blue;
 
                   return (
                     <div
                       key={idx}
-                      onClick={() => toggleOption(val)}
+                      onClick={() => toggleOption(val, opt.labelHe)}
                       style={{
                         display: 'flex',
                         alignItems: 'center',

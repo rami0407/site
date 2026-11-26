@@ -118,9 +118,11 @@ export const firestoreRestSaveDoc = async (collectionName, logicalDocId, dataObj
 
       if (patchRes && patchRes.ok) {
         const json = await patchRes.json();
+        const updateTime = json.updateTime || null;
         return {
           ok: true,
-          updateTime: json.updateTime || null,
+          updateTime,
+          ms: updateTime ? Date.parse(updateTime) : Date.now(),
           data: fromFirestoreFields(json.fields)
         };
       }
@@ -151,9 +153,11 @@ export const firestoreRestSaveDoc = async (collectionName, logicalDocId, dataObj
     const json = await res.json();
     const parsed = fromFirestoreFields(json.fields);
     delete parsed._logicalId;
+    const updateTime = json.updateTime || null;
     return {
       ok: true,
-      updateTime: json.updateTime || null,
+      updateTime,
+      ms: updateTime ? Date.parse(updateTime) : Date.now(),
       data: parsed
     };
   } finally {
@@ -228,6 +232,7 @@ export const firestoreRestGetDoc = async (collectionName, logicalDocId, timeoutM
     return {
       exists: true,
       updateTime: candidates[0].updateTime,
+      ms: candidates[0].ms,
       data: candidates[0].data
     };
   } finally {
@@ -239,6 +244,7 @@ let lastCompactionMs = 0;
 
 /**
  * List & resolve newest server state for ALL `holistic_*` documents (base + teacher revisions) in 2 parallel requests!
+ * Uses an exact `__name__` range query so it never truncates regardless of total collection size.
  * Also auto-compacts consumed revision docs in the background when SuperAdmin is logged in.
  */
 export const firestoreRestListHolisticDocs = async (timeoutMs = 10000) => {
@@ -246,10 +252,43 @@ export const firestoreRestListHolisticDocs = async (timeoutMs = 10000) => {
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const [listRes, revRes] = await Promise.all([
-      fetch(`${FIRESTORE_DOCS_URL}/students?pageSize=150`, {
-        method: 'GET',
+      fetch(`${FIRESTORE_DOCS_URL}:runQuery`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         cache: 'no-store',
-        signal: controller.signal
+        signal: controller.signal,
+        body: JSON.stringify({
+          structuredQuery: {
+            from: [{ collectionId: 'students' }],
+            where: {
+              compositeFilter: {
+                op: 'AND',
+                filters: [
+                  {
+                    fieldFilter: {
+                      field: { fieldPath: '__name__' },
+                      op: 'GREATER_THAN_OR_EQUAL',
+                      value: {
+                        referenceValue:
+                          'projects/site-a8b88/databases/(default)/documents/students/holistic_'
+                      }
+                    }
+                  },
+                  {
+                    fieldFilter: {
+                      field: { fieldPath: '__name__' },
+                      op: 'LESS_THAN_OR_EQUAL',
+                      value: {
+                        referenceValue:
+                          'projects/site-a8b88/databases/(default)/documents/students/holistic_\uf8ff'
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        })
       }).catch(() => null),
       fetch(`${FIRESTORE_DOCS_URL}:runQuery`, {
         method: 'POST',
@@ -292,12 +331,16 @@ export const firestoreRestListHolisticDocs = async (timeoutMs = 10000) => {
 
     if (listRes && listRes.ok) {
       const lj = await listRes.json();
-      (lj.documents || []).forEach((d) => {
-        const rawId = d.name ? d.name.split('/').pop() : '';
-        const parsed = fromFirestoreFields(d.fields);
-        const logicalId = parsed._logicalId || rawId;
-        considerDoc(logicalId, d.updateTime, parsed);
-      });
+      if (Array.isArray(lj)) {
+        lj.forEach((row) => {
+          if (row?.document?.fields) {
+            const rawId = row.document.name ? row.document.name.split('/').pop() : '';
+            const parsed = fromFirestoreFields(row.document.fields);
+            const logicalId = parsed._logicalId || rawId;
+            considerDoc(logicalId, row.document.updateTime, parsed);
+          }
+        });
+      }
     }
 
     if (revRes && revRes.ok) {
@@ -307,25 +350,26 @@ export const firestoreRestListHolisticDocs = async (timeoutMs = 10000) => {
           if (row?.document?.fields) {
             const rawDocName = row.document.name || '';
             const rawDocId = rawDocName.split('/').pop();
+            const revMs = row.document.updateTime ? Date.parse(row.document.updateTime) : 0;
             const parsed = fromFirestoreFields(row.document.fields);
             const logicalId = parsed._logicalId;
             if (logicalId && logicalId.startsWith('holistic_')) {
               considerDoc(logicalId, row.document.updateTime, parsed);
               if (!revDocsByLogicalId.has(logicalId)) revDocsByLogicalId.set(logicalId, []);
-              revDocsByLogicalId.get(logicalId).push(rawDocId);
+              revDocsByLogicalId.get(logicalId).push({ id: rawDocId, ms: revMs });
             }
           }
         });
       }
     }
 
-    // Background SuperAdmin compaction (merges teacher revisions into base doc & cleans old rev__ docs)
+    // Background SuperAdmin compaction (merges teacher revisions into base doc & cleans only consumed rev__ docs)
     const now = Date.now();
     if (revDocsByLogicalId.size > 0 && now - lastCompactionMs > 20000) {
       getAdminIdToken().then(async (idToken) => {
         if (!idToken) return;
         lastCompactionMs = Date.now();
-        for (const [logicalId, revIds] of revDocsByLogicalId.entries()) {
+        for (const [logicalId, revEntries] of revDocsByLogicalId.entries()) {
           const winner = bestByLogicalId.get(logicalId);
           if (!winner) continue;
           const ok = await fetch(`${FIRESTORE_DOCS_URL}/students/${encodeURIComponent(logicalId)}`, {
@@ -339,11 +383,13 @@ export const firestoreRestListHolisticDocs = async (timeoutMs = 10000) => {
             .then((r) => r.ok)
             .catch(() => false);
           if (ok) {
-            for (const rId of revIds) {
-              fetch(`${FIRESTORE_DOCS_URL}/students/${encodeURIComponent(rId)}`, {
-                method: 'DELETE',
-                headers: { Authorization: `Bearer ${idToken}` }
-              }).catch(() => {});
+            for (const rEntry of revEntries) {
+              if (rEntry.ms <= winner.ms) {
+                fetch(`${FIRESTORE_DOCS_URL}/students/${encodeURIComponent(rEntry.id)}`, {
+                  method: 'DELETE',
+                  headers: { Authorization: `Bearer ${idToken}` }
+                }).catch(() => {});
+              }
             }
           }
         }
