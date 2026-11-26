@@ -1,4 +1,4 @@
-const CACHE_NAME = 'musherfe-pwa-v_1795674849592';
+const CACHE_NAME = 'musherfe-pwa-v_1795681674965';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
