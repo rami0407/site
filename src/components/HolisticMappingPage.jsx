@@ -199,6 +199,14 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
   const configSaveTimerRef = useRef(null);
   const lastServerUpdateRef = useRef({});
 
+  // Horizontal Navigation, Column Group Filter & Quick-Fill Student Mode State
+  const [selectedColGroupFilter, setSelectedColGroupFilter] = useState('all');
+  const sheetScrollRef = useRef(null);
+  const [sheetScrollPct, setSheetScrollPct] = useState(0);
+  const [sheetHasHorizOverflow, setSheetHasHorizOverflow] = useState(false);
+  const [quickFillStudentId, setQuickFillStudentId] = useState(null);
+  const [quickFillCustomInputs, setQuickFillCustomInputs] = useState({});
+
   // Modals State
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [showBulkPasteModal, setShowBulkPasteModal] = useState(false);
@@ -984,6 +992,67 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     () => SCHOOL_19_CLASSES.find((c) => c.id === selectedClassId) || SCHOOL_19_CLASSES[0],
     [selectedClassId]
   );
+
+  // Column Categories & Filtered Columns for Easy Zero-Scroll Filling
+  const columnGroups = useMemo(() => {
+    const seen = new Set();
+    const list = [];
+    holisticColumns.forEach((c) => {
+      const g = (c.groupHe || 'אחר').trim();
+      if (!seen.has(g)) {
+        seen.add(g);
+        list.push(g);
+      }
+    });
+    return list;
+  }, [holisticColumns]);
+
+  const displayedHolisticColumns = useMemo(() => {
+    if (selectedColGroupFilter === 'all') return holisticColumns;
+    const filtered = holisticColumns.filter((c) => (c.groupHe || 'אחר').trim() === selectedColGroupFilter);
+    return filtered.length > 0 ? filtered : holisticColumns;
+  }, [holisticColumns, selectedColGroupFilter]);
+
+  const updateSheetScrollMetrics = () => {
+    const el = sheetScrollRef.current;
+    if (!el) return;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    setSheetHasHorizOverflow(maxScroll > 12);
+    if (maxScroll <= 12) {
+      setSheetScrollPct(0);
+    } else {
+      const pct = Math.min(100, Math.max(0, Math.round((Math.abs(el.scrollLeft) / maxScroll) * 100)));
+      setSheetScrollPct(pct);
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(updateSheetScrollMetrics, 60);
+    window.addEventListener('resize', updateSheetScrollMetrics);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', updateSheetScrollMetrics);
+    };
+  }, [displayedHolisticColumns, selectedClassId, activeMainTab]);
+
+  const scrollSheetHorizontally = (mode, customPct = 0) => {
+    const el = sheetScrollRef.current;
+    if (!el) return;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    if (maxScroll <= 0) return;
+    if (mode === 'left') {
+      el.scrollBy({ left: -360, behavior: 'smooth' });
+    } else if (mode === 'right') {
+      el.scrollBy({ left: 360, behavior: 'smooth' });
+    } else if (mode === 'start') {
+      el.scrollTo({ left: 0, behavior: 'smooth' });
+    } else if (mode === 'end') {
+      el.scrollTo({ left: -maxScroll, behavior: 'smooth' });
+    } else if (mode === 'pct') {
+      el.scrollLeft = -(customPct / 100) * maxScroll;
+      setSheetScrollPct(customPct);
+    }
+  };
 
   const currentClassAccess = useMemo(
     () => getAccessForClass(selectedClassId),
@@ -3266,15 +3335,169 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                 </p>
               </div>
             ) : (
-              <div className="holistic-table-container">
-                <table className="holistic-sheet-table">
+              <>
+                {/* ========================================================================= */}
+                {/* STICKY SMART NAVIGATION BAR: GROUP FILTER + QUICK FILL + LEFT/RIGHT ARROWS */}
+                {/* ========================================================================= */}
+                <div
+                  className="no-print"
+                  style={{
+                    position: 'sticky',
+                    top: '4px',
+                    zIndex: 32,
+                    background: 'rgba(255, 255, 255, 0.97)',
+                    backdropFilter: 'blur(8px)',
+                    border: '1.5px solid #93c5fd',
+                    borderRadius: '14px',
+                    padding: '0.6rem 0.9rem',
+                    marginBottom: '0.75rem',
+                    boxShadow: '0 6px 20px rgba(15, 23, 42, 0.08)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '0.6rem'
+                  }}
+                >
+                  {/* 1. Category Filter Chips (shows 3-4 columns full-screen without horizontal scroll!) */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 900, color: '#1e3a8a', marginLeft: '4px' }}>
+                      📂 סינון עמודות:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedColGroupFilter('all')}
+                      style={{
+                        padding: '0.38rem 0.8rem',
+                        borderRadius: '999px',
+                        border: selectedColGroupFilter === 'all' ? '2px solid #1d4ed8' : '1.5px solid #cbd5e1',
+                        background: selectedColGroupFilter === 'all' ? '#1d4ed8' : '#f8fafc',
+                        color: selectedColGroupFilter === 'all' ? '#ffffff' : '#334155',
+                        fontWeight: 800,
+                        fontSize: '0.8rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      📋 כל העמודות ({holisticColumns.length})
+                    </button>
+                    {columnGroups.map((grp) => {
+                      const count = holisticColumns.filter((c) => (c.groupHe || 'אחר').trim() === grp).length;
+                      const isActive = selectedColGroupFilter === grp;
+                      return (
+                        <button
+                          key={grp}
+                          type="button"
+                          onClick={() => setSelectedColGroupFilter(grp)}
+                          style={{
+                            padding: '0.38rem 0.8rem',
+                            borderRadius: '999px',
+                            border: isActive ? '2px solid #2563eb' : '1.5px solid #cbd5e1',
+                            background: isActive ? '#eff6ff' : '#ffffff',
+                            color: isActive ? '#1d4ed8' : '#334155',
+                            fontWeight: 800,
+                            fontSize: '0.8rem',
+                            cursor: 'pointer'
+                          }}
+                          title="הצג רק קבוצת עמודות זו ללא צורך בגלילה ימינה ושמאלה"
+                        >
+                          {grp} ({count})
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* 2. Quick-Fill Mode + Always-Visible Left/Right Table Scroll Controls */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+                    {currentClassAccess.canEditMapping && filteredStudents.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setQuickFillStudentId(filteredStudents[0].id)}
+                        style={{
+                          background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+                          color: '#ffffff',
+                          border: 'none',
+                          padding: '0.45rem 0.95rem',
+                          borderRadius: '10px',
+                          fontWeight: 900,
+                          fontSize: '0.82rem',
+                          cursor: 'pointer',
+                          boxShadow: '0 3px 10px rgba(124, 58, 237, 0.3)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px'
+                        }}
+                        title="פתח מסך מילוי מהיר ונוח לתלמיד אחר תלמיד — כל השדות מול העיניים ללא גלילה!"
+                      >
+                        <span>⚡</span>
+                        <span>מילוי מהיר (תלמיד אחר תלמיד)</span>
+                      </button>
+                    )}
+
+                    {sheetHasHorizOverflow && (
+                      <div
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          background: '#eff6ff',
+                          border: '1.5px solid #93c5fd',
+                          padding: '3px 6px',
+                          borderRadius: '10px'
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => scrollSheetHorizontally('start')}
+                          title="חזרה לתחילת השורה (ימינה)"
+                          style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '7px', padding: '3px 7px', cursor: 'pointer', fontWeight: 900, fontSize: '0.78rem', color: '#1e3a8a' }}
+                        >
+                          ⏮
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => scrollSheetHorizontally('right')}
+                          title="הזז את הגיליון ימינה"
+                          style={{ background: '#ffffff', border: '1px solid #93c5fd', borderRadius: '7px', padding: '3px 9px', cursor: 'pointer', fontWeight: 900, fontSize: '0.8rem', color: '#1d4ed8' }}
+                        >
+                          ▶ ימינה
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => scrollSheetHorizontally('left')}
+                          title="המשך השורה שמאלה (לעמודות הבאות)"
+                          style={{ background: '#2563eb', border: 'none', borderRadius: '7px', padding: '4px 10px', cursor: 'pointer', fontWeight: 900, fontSize: '0.8rem', color: '#ffffff' }}
+                        >
+                          המשך השורה ◀
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => scrollSheetHorizontally('end')}
+                          title="קפוץ לסוף השורה (שמאלה)"
+                          style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '7px', padding: '3px 7px', cursor: 'pointer', fontWeight: 900, fontSize: '0.78rem', color: '#1e3a8a' }}
+                        >
+                          ⏭
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+              <div
+                ref={sheetScrollRef}
+                onScroll={updateSheetScrollMetrics}
+                className="holistic-table-container"
+              >
+                <table
+                  className="holistic-sheet-table"
+                  style={{ minWidth: displayedHolisticColumns.length <= 5 ? '100%' : '1100px' }}
+                >
                   <thead>
                     {/* Top Grouped Header Row matching the user's screenshot */}
                     <tr>
                       <th className="sticky-col" rowSpan={2}>
                         שם התלמיד ({filteredStudents.length})
                       </th>
-                      {holisticColumns.map((col) => (
+                      {displayedHolisticColumns.map((col) => (
                         <th
                           key={col.id}
                           style={{
@@ -3292,7 +3515,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                       )}
                     </tr>
                     <tr className="sub-header-row">
-                      {holisticColumns.map((col) => (
+                      {displayedHolisticColumns.map((col) => (
                         <th key={`sub_${col.id}`}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', flexWrap: 'wrap' }}>
                             <span>{isColumnMultiSelect(col) ? '☑️ בחירה מרובה' : '🔘 בחירה יחידה'}</span>
@@ -3365,28 +3588,50 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                                   </div>
                                 )}
                               </div>
-                              <span
-                                onClick={() => {
-                                  setSelectedStudentForCard(stu);
-                                  setActiveMainTab('student-analytics');
-                                }}
-                                style={{
-                                  fontSize: '0.72rem',
-                                  background: '#eff6ff',
-                                  color: '#1d4ed8',
-                                  padding: '2px 6px',
-                                  borderRadius: '6px',
-                                  cursor: 'pointer',
-                                  whiteSpace: 'nowrap'
-                                }}
-                              >
-                                כרטיס ↗
-                              </span>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', alignItems: 'flex-end' }}>
+                                {currentClassAccess.canEditMapping && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setQuickFillStudentId(stu.id)}
+                                    style={{
+                                      fontSize: '0.7rem',
+                                      background: '#f5f3ff',
+                                      color: '#6d28d9',
+                                      border: '1px solid #ddd6fe',
+                                      padding: '2px 6px',
+                                      borderRadius: '6px',
+                                      cursor: 'pointer',
+                                      fontWeight: 900,
+                                      whiteSpace: 'nowrap'
+                                    }}
+                                    title="מילוי מהיר של כל שדות התלמיד במסך אחד"
+                                  >
+                                    ⚡ מילוי
+                                  </button>
+                                )}
+                                <span
+                                  onClick={() => {
+                                    setSelectedStudentForCard(stu);
+                                    setActiveMainTab('student-analytics');
+                                  }}
+                                  style={{
+                                    fontSize: '0.7rem',
+                                    background: '#eff6ff',
+                                    color: '#1d4ed8',
+                                    padding: '2px 6px',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
+                                  כרטיס ↗
+                                </span>
+                              </div>
                             </div>
                           </td>
 
                           {/* Holistic Multi-Selection Pill Cells */}
-                          {holisticColumns.map((col) => {
+                          {displayedHolisticColumns.map((col) => {
                             const currentVal = stu[col.id];
                             const rawVals = normalizeHolisticValue(currentVal);
                             const selectedValues = isColumnMultiSelect(col) ? rawVals : rawVals.slice(0, 1);
@@ -3521,6 +3766,91 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                   </tbody>
                 </table>
               </div>
+
+              {/* ========================================================================= */}
+              {/* FLOATING ALWAYS-VISIBLE HORIZONTAL SCROLLBAR AT BOTTOM OF SCREEN          */}
+              {/* ========================================================================= */}
+              {sheetHasHorizOverflow && (
+                <div
+                  className="no-print"
+                  style={{
+                    position: 'sticky',
+                    bottom: '10px',
+                    zIndex: 35,
+                    marginTop: '0.65rem',
+                    background: 'rgba(15, 23, 42, 0.92)',
+                    backdropFilter: 'blur(8px)',
+                    color: '#ffffff',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '999px',
+                    boxShadow: '0 10px 28px rgba(15, 23, 42, 0.35)',
+                    border: '1.5px solid rgba(96, 165, 250, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    maxWidth: '680px',
+                    marginRight: 'auto',
+                    marginLeft: 'auto'
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => scrollSheetHorizontally('right')}
+                    style={{
+                      background: 'rgba(255,255,255,0.15)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '999px',
+                      padding: '4px 12px',
+                      fontWeight: 900,
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    ▶ ימינה
+                  </button>
+
+                  <input
+                    type="range"
+                    dir="rtl"
+                    min={0}
+                    max={100}
+                    value={sheetScrollPct}
+                    onChange={(e) => scrollSheetHorizontally('pct', Number(e.target.value))}
+                    style={{
+                      flex: 1,
+                      cursor: 'pointer',
+                      accentColor: '#38bdf8',
+                      height: '7px'
+                    }}
+                    title="גרור להזזת הגיליון ימינה ושמאלה מכל מקום בדף"
+                  />
+
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#bae6fd', minWidth: '36px', textAlign: 'center' }}>
+                    {sheetScrollPct}%
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => scrollSheetHorizontally('left')}
+                    style={{
+                      background: '#2563eb',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '999px',
+                      padding: '4px 12px',
+                      fontWeight: 900,
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    המשך שמאלה ◀
+                  </button>
+                </div>
+              )}
+              </>
             )}
           </div>
         )}
@@ -5857,6 +6187,401 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
           </div>
         )}
       </div>
+
+      {/* ===================================================================== */}
+      {/* MODAL: QUICK-FILL STUDENT-BY-STUDENT MODE (מילוי מהיר לתלמיד במסך אחד) */}
+      {/* ===================================================================== */}
+      {quickFillStudentId && (() => {
+        const list = filteredStudents.length > 0 ? filteredStudents : currentStudents;
+        const stuIndex = list.findIndex((s) => s.id === quickFillStudentId);
+        const qfStu = stuIndex >= 0 ? list[stuIndex] : list[0];
+        if (!qfStu) return null;
+
+        const actualIndex = stuIndex >= 0 ? stuIndex : 0;
+        const prevStu = actualIndex > 0 ? list[actualIndex - 1] : null;
+        const nextStu = actualIndex < list.length - 1 ? list[actualIndex + 1] : null;
+
+        const filledCount = holisticColumns.filter((c) => normalizeHolisticValue(qfStu[c.id]).length > 0).length;
+
+        const handleQuickToggle = (col, val) => {
+          if (!currentClassAccess.canEditMapping) return;
+          const allowMulti = isColumnMultiSelect(col);
+          const rawSelected = normalizeHolisticValue(qfStu[col.id]);
+          const selected = allowMulti ? rawSelected : rawSelected.slice(0, 1);
+
+          let next;
+          if (!allowMulti) {
+            next = selected.includes(val) ? [] : [val];
+          } else if (selected.includes(val)) {
+            next = selected.filter((v) => v !== val);
+          } else if (isExclusiveNeutralOption(val)) {
+            next = [val];
+          } else {
+            next = [...selected.filter((v) => !isExclusiveNeutralOption(v)), val];
+          }
+          handleUpdateStudentField(qfStu.id, col.id, next);
+        };
+
+        const handleQuickAddCustom = (col) => {
+          const text = (quickFillCustomInputs[col.id] || '').trim();
+          if (!text) return;
+          const allowMulti = isColumnMultiSelect(col);
+          const selected = normalizeHolisticValue(qfStu[col.id]);
+          if (!allowMulti) {
+            handleUpdateStudentField(qfStu.id, col.id, [text]);
+          } else if (!selected.includes(text)) {
+            handleUpdateStudentField(qfStu.id, col.id, [...selected.filter((v) => !isExclusiveNeutralOption(v)), text]);
+          }
+          setQuickFillCustomInputs((prev) => ({ ...prev, [col.id]: '' }));
+        };
+
+        return (
+          <div
+            className="holistic-modal-backdrop"
+            style={{ zIndex: 10040 }}
+            onClick={() => setQuickFillStudentId(null)}
+          >
+            <div
+              className="holistic-modal-box"
+              style={{
+                maxWidth: '1080px',
+                width: '96%',
+                maxHeight: '92vh',
+                display: 'flex',
+                flexDirection: 'column',
+                padding: 0,
+                overflow: 'hidden',
+                borderRadius: '22px'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Sticky Header with Student Switcher */}
+              <div
+                style={{
+                  background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 65%, #2563eb 100%)',
+                  color: '#ffffff',
+                  padding: '1rem 1.35rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '0.75rem'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    disabled={!prevStu}
+                    onClick={() => prevStu && setQuickFillStudentId(prevStu.id)}
+                    style={{
+                      background: prevStu ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)',
+                      color: '#ffffff',
+                      border: '1px solid rgba(255,255,255,0.35)',
+                      borderRadius: '10px',
+                      padding: '0.45rem 0.85rem',
+                      fontWeight: 900,
+                      fontSize: '0.84rem',
+                      cursor: prevStu ? 'pointer' : 'not-allowed',
+                      opacity: prevStu ? 1 : 0.45
+                    }}
+                  >
+                    ▶ תלמיד קודם
+                  </button>
+
+                  <select
+                    value={qfStu.id}
+                    onChange={(e) => setQuickFillStudentId(e.target.value)}
+                    style={{
+                      background: '#ffffff',
+                      color: '#0f172a',
+                      border: '2px solid #fbbf24',
+                      borderRadius: '10px',
+                      padding: '0.45rem 0.85rem',
+                      fontWeight: 900,
+                      fontSize: '0.95rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {list.map((s, i) => (
+                      <option key={s.id} value={s.id}>
+                        {i + 1} / {list.length} — {s.studentName}
+                      </option>
+                    ))}
+                  </select>
+
+                  <button
+                    type="button"
+                    disabled={!nextStu}
+                    onClick={() => nextStu && setQuickFillStudentId(nextStu.id)}
+                    style={{
+                      background: nextStu ? '#10b981' : 'rgba(255,255,255,0.06)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      padding: '0.48rem 0.95rem',
+                      fontWeight: 900,
+                      fontSize: '0.84rem',
+                      cursor: nextStu ? 'pointer' : 'not-allowed',
+                      opacity: nextStu ? 1 : 0.45
+                    }}
+                  >
+                    תלמיד הבא ◀
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <span
+                    style={{
+                      background: 'rgba(16, 185, 129, 0.25)',
+                      border: '1px solid #6ee7b7',
+                      color: '#ecfdf5',
+                      padding: '4px 10px',
+                      borderRadius: '999px',
+                      fontSize: '0.78rem',
+                      fontWeight: 900
+                    }}
+                  >
+                    ⚡ מולאו {filledCount}/{holisticColumns.length} תחומים • נשמר אוטומטית
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => setQuickFillStudentId(null)}
+                    style={{
+                      background: 'rgba(255,255,255,0.18)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      width: '36px',
+                      height: '36px',
+                      fontSize: '1.1rem',
+                      fontWeight: 900,
+                      cursor: 'pointer'
+                    }}
+                    title="סגור"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              {/* All 12 Fields Visible Cleanly Without Any Horizontal Scroll */}
+              <div
+                style={{
+                  flex: 1,
+                  overflowY: 'auto',
+                  padding: '1.15rem 1.35rem',
+                  background: '#f8fafc',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                  gap: '0.9rem'
+                }}
+              >
+                {holisticColumns.map((col) => {
+                  const allowMulti = isColumnMultiSelect(col);
+                  const rawVals = normalizeHolisticValue(qfStu[col.id]);
+                  const selected = allowMulti ? rawVals : rawVals.slice(0, 1);
+                  const opts = col.options || [];
+                  const customVals = selected.filter((v) => !opts.some((o) => (o.value || o.labelHe) === v));
+
+                  return (
+                    <div
+                      key={col.id}
+                      style={{
+                        background: '#ffffff',
+                        borderRadius: '14px',
+                        border: selected.length > 0 ? '1.5px solid #93c5fd' : '1.5px solid #e2e8f0',
+                        padding: '0.85rem 0.95rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.55rem'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                        <div>
+                          <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 800 }}>{col.groupHe}</div>
+                          <div style={{ fontSize: '0.95rem', fontWeight: 900, color: '#0f172a' }}>{col.titleHe}</div>
+                        </div>
+                        <span
+                          style={{
+                            fontSize: '0.7rem',
+                            fontWeight: 800,
+                            padding: '2px 7px',
+                            borderRadius: '999px',
+                            background: allowMulti ? '#ecfdf5' : '#eff6ff',
+                            color: allowMulti ? '#065f46' : '#1e40af'
+                          }}
+                        >
+                          {allowMulti ? '☑️ מרובה' : '🔘 יחידה'}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.38rem' }}>
+                        {opts.map((opt, oIdx) => {
+                          const val = opt.value || opt.labelHe;
+                          const isChecked = selected.includes(val);
+                          const pill = OPTION_PILL_COLORS[opt.color] || OPTION_PILL_COLORS.blue;
+                          return (
+                            <button
+                              key={oIdx}
+                              type="button"
+                              onClick={() => handleQuickToggle(col, val)}
+                              style={{
+                                padding: '0.35rem 0.7rem',
+                                borderRadius: '999px',
+                                border: isChecked ? `2px solid ${pill.border || '#2563eb'}` : '1.5px solid #cbd5e1',
+                                background: isChecked ? (pill.bg || '#eff6ff') : '#f8fafc',
+                                color: isChecked ? (pill.text || '#0f172a') : '#334155',
+                                fontWeight: isChecked ? 900 : 700,
+                                fontSize: '0.8rem',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}
+                            >
+                              <span>{isChecked ? (allowMulti ? '✓' : '●') : '+'}</span>
+                              <span>{opt.labelHe || opt.value}</span>
+                            </button>
+                          );
+                        })}
+
+                        {customVals.map((cv, cIdx) => (
+                          <button
+                            key={`cv_${cIdx}`}
+                            type="button"
+                            onClick={() => handleQuickToggle(col, cv)}
+                            style={{
+                              padding: '0.35rem 0.7rem',
+                              borderRadius: '999px',
+                              border: '2px solid #6366f1',
+                              background: '#eef2ff',
+                              color: '#3730a3',
+                              fontWeight: 900,
+                              fontSize: '0.8rem',
+                              cursor: 'pointer'
+                            }}
+                            title="לחץ להסרה"
+                          >
+                            ✓ {cv} ✕
+                          </button>
+                        ))}
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '4px', marginTop: 'auto', paddingTop: '2px' }}>
+                        <input
+                          type="text"
+                          value={quickFillCustomInputs[col.id] || ''}
+                          onChange={(e) => setQuickFillCustomInputs((prev) => ({ ...prev, [col.id]: e.target.value }))}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleQuickAddCustom(col);
+                            }
+                          }}
+                          placeholder="✍️ ערך חופשי..."
+                          style={{
+                            flex: 1,
+                            padding: '0.3rem 0.55rem',
+                            borderRadius: '7px',
+                            border: '1px solid #cbd5e1',
+                            fontSize: '0.76rem'
+                          }}
+                        />
+                        {(quickFillCustomInputs[col.id] || '').trim() && (
+                          <button
+                            type="button"
+                            onClick={() => handleQuickAddCustom(col)}
+                            style={{
+                              background: '#4f46e5',
+                              color: '#ffffff',
+                              border: 'none',
+                              borderRadius: '7px',
+                              padding: '0.3rem 0.6rem',
+                              fontSize: '0.75rem',
+                              fontWeight: 800,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            + הוסף
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Sticky Footer */}
+              <div
+                style={{
+                  background: '#ffffff',
+                  borderTop: '1px solid #e2e8f0',
+                  padding: '0.85rem 1.35rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '0.75rem'
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setQuickFillStudentId(null)}
+                  style={{
+                    background: '#f1f5f9',
+                    color: '#334155',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '10px',
+                    padding: '0.55rem 1.2rem',
+                    fontWeight: 800,
+                    fontSize: '0.86rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  חזרה לטבלה המלאה
+                </button>
+
+                {nextStu ? (
+                  <button
+                    type="button"
+                    onClick={() => setQuickFillStudentId(nextStu.id)}
+                    style={{
+                      background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '12px',
+                      padding: '0.65rem 1.6rem',
+                      fontWeight: 900,
+                      fontSize: '0.92rem',
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)'
+                    }}
+                  >
+                    המשך לתלמיד הבא: {nextStu.studentName} ◀
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setQuickFillStudentId(null)}
+                    style={{
+                      background: '#2563eb',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '12px',
+                      padding: '0.65rem 1.6rem',
+                      fontWeight: 900,
+                      fontSize: '0.92rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ✓ סיום מילוי הכיתה
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ===================================================================== */}
       {/* POPOVER / MODAL: MULTI-SELECTION FOR HOLISTIC CRITERIA (בחירה מרובה) */}
