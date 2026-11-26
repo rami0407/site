@@ -1543,6 +1543,23 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
     triggerToast('🗑️ העמודה הוסרה בהצלחה.');
   };
 
+  const handleMoveHolisticColumn = (colId, stepOrTargetIdx, isExact = false) => {
+    const curIdx = holisticColumns.findIndex((c) => c.id === colId);
+    if (curIdx < 0) return;
+    const targetIdx = isExact
+      ? Math.max(0, Math.min(holisticColumns.length - 1, Number(stepOrTargetIdx)))
+      : curIdx + stepOrTargetIdx;
+    if (targetIdx < 0 || targetIdx >= holisticColumns.length || targetIdx === curIdx) return;
+
+    const nextCols = [...holisticColumns];
+    const [moved] = nextCols.splice(curIdx, 1);
+    nextCols.splice(targetIdx, 0, moved);
+    const reordered = nextCols.map((c, idx) => ({ ...c, order: idx + 1 }));
+    setHolisticColumns(reordered);
+    saveGlobalConfig({ holisticColumns: reordered }, 250);
+    triggerToast(`↔️ מיקום העמודה "${moved.titleHe}" הועבר למיקום #${targetIdx + 1} (تم تحديث ترتيب العمود)!`);
+  };
+
   const handleRenameColumn = (colId, newTitleHe, newGroupHe, trimEdges = false) => {
     const rawTitle = newTitleHe ?? '';
     const rawGroup = newGroupHe ?? '';
@@ -3625,36 +3642,83 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                       )}
                     </tr>
                     <tr className="sub-header-row">
-                      {displayedHolisticColumns.map((col) => (
-                        <th key={`sub_${col.id}`}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', flexWrap: 'wrap' }}>
-                            <span>{isColumnMultiSelect(col) ? '☑️ בחירה מרובה' : '🔘 בחירה יחידה'}</span>
-                            {userCapabilities.canManageSchema && (
-                              <button
-                                type="button"
-                                onClick={() => setEditingColForOptions(col)}
-                                title="הוספה / עריכה / החלפה / מחיקה של אפשרויות מענה לשדה זה"
-                                style={{
-                                  border: '1px solid #93c5fd',
-                                  background: '#dbeafe',
-                                  color: '#1e40af',
-                                  borderRadius: '6px',
-                                  padding: '2px 7px',
-                                  cursor: 'pointer',
-                                  fontSize: '0.72rem',
-                                  fontWeight: 900,
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '3px'
-                                }}
-                              >
-                                <span>✏️</span>
-                                <span>עריכת אפשרויות</span>
-                              </button>
-                            )}
-                          </div>
-                        </th>
-                      ))}
+                      {displayedHolisticColumns.map((col) => {
+                        const globalColIdx = holisticColumns.findIndex((c) => c.id === col.id);
+                        return (
+                          <th key={`sub_${col.id}`}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                              <span>{isColumnMultiSelect(col) ? '☑️ בחירה מרובה' : '🔘 בחירה יחידה'}</span>
+                              {userCapabilities.canManageSchema && (
+                                <>
+                                  <button
+                                    type="button"
+                                    disabled={globalColIdx <= 0}
+                                    onClick={() => handleMoveHolisticColumn(col.id, -1)}
+                                    title="הזז עמודה ימינה (تحريك العمود لليمين)"
+                                    style={{
+                                      border: '1px solid #cbd5e1',
+                                      background: '#ffffff',
+                                      color: '#1e3a8a',
+                                      borderRadius: '6px',
+                                      padding: '2px 5px',
+                                      cursor: globalColIdx <= 0 ? 'not-allowed' : 'pointer',
+                                      opacity: globalColIdx <= 0 ? 0.35 : 1,
+                                      fontSize: '0.7rem',
+                                      fontWeight: 900
+                                    }}
+                                  >
+                                    ▶
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingColForOptions(col)}
+                                    title="הוספה / עריכה / החלפה / שינוי סדר של עמודה זו"
+                                    style={{
+                                      border: '1px solid #93c5fd',
+                                      background: '#dbeafe',
+                                      color: '#1e40af',
+                                      borderRadius: '6px',
+                                      padding: '2px 7px',
+                                      cursor: 'pointer',
+                                      fontSize: '0.72rem',
+                                      fontWeight: 900,
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '3px'
+                                    }}
+                                  >
+                                    <span>✏️</span>
+                                    <span>עריכת אפשרויות</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={globalColIdx < 0 || globalColIdx >= holisticColumns.length - 1}
+                                    onClick={() => handleMoveHolisticColumn(col.id, 1)}
+                                    title="הזז עמודה שמאלה (تحريك العمود لليسار)"
+                                    style={{
+                                      border: '1px solid #cbd5e1',
+                                      background: '#ffffff',
+                                      color: '#1e3a8a',
+                                      borderRadius: '6px',
+                                      padding: '2px 5px',
+                                      cursor:
+                                        globalColIdx < 0 || globalColIdx >= holisticColumns.length - 1
+                                          ? 'not-allowed'
+                                          : 'pointer',
+                                      opacity:
+                                        globalColIdx < 0 || globalColIdx >= holisticColumns.length - 1 ? 0.35 : 1,
+                                      fontSize: '0.7rem',
+                                      fontWeight: 900
+                                    }}
+                                  >
+                                    ◀
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </th>
+                        );
+                      })}
                     </tr>
                   </thead>
 
@@ -5864,7 +5928,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                 </p>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '460px', overflowY: 'auto', paddingLeft: '0.25rem' }}>
-                  {holisticColumns.map((col) => (
+                  {holisticColumns.map((col, colIdx) => (
                     <div
                       key={col.id}
                       style={{
@@ -5881,6 +5945,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                     >
                       <div>
                         <div style={{ fontWeight: 900, color: '#0f172a', fontSize: '0.96rem' }}>
+                          <span style={{ color: '#2563eb', marginLeft: '6px' }}>#{colIdx + 1}</span>
                           {col.titleHe}
                         </div>
                         <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, marginTop: '2px' }}>
@@ -5914,7 +5979,39 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', gap: '0.45rem', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          disabled={colIdx === 0}
+                          onClick={() => handleMoveHolisticColumn(col.id, -1)}
+                          title="קדם עמודה ימינה / למעלה (تقديم العمود)"
+                          style={{
+                            border: '1px solid #cbd5e1',
+                            background: '#ffffff',
+                            borderRadius: '8px',
+                            padding: '0.42rem 0.55rem',
+                            cursor: colIdx === 0 ? 'not-allowed' : 'pointer',
+                            opacity: colIdx === 0 ? 0.35 : 1
+                          }}
+                        >
+                          ⬆️
+                        </button>
+                        <button
+                          type="button"
+                          disabled={colIdx === holisticColumns.length - 1}
+                          onClick={() => handleMoveHolisticColumn(col.id, 1)}
+                          title="הזז עמודה שמאלה / למטה (تأخير العمود)"
+                          style={{
+                            border: '1px solid #cbd5e1',
+                            background: '#ffffff',
+                            borderRadius: '8px',
+                            padding: '0.42rem 0.55rem',
+                            cursor: colIdx === holisticColumns.length - 1 ? 'not-allowed' : 'pointer',
+                            opacity: colIdx === holisticColumns.length - 1 ? 0.35 : 1
+                          }}
+                        >
+                          ⬇️
+                        </button>
                         <button
                           type="button"
                           onClick={() => setEditingColForOptions(col)}
@@ -7274,6 +7371,93 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                   </button>
                 )}
               </div>
+
+              {/* Column Order / Position Control in Table */}
+              {(() => {
+                const curColIndex = holisticColumns.findIndex((c) => c.id === activeCol.id);
+                if (curColIndex < 0) return null;
+                return (
+                  <div
+                    style={{
+                      background: '#f0f9ff',
+                      border: '1.5px solid #93c5fd',
+                      padding: '0.8rem 1rem',
+                      borderRadius: '14px',
+                      marginBottom: '1rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '0.65rem'
+                    }}
+                  >
+                    <div style={{ fontWeight: 900, fontSize: '0.84rem', color: '#1e3a8a' }}>
+                      ↔️ מיקום העמודה בטבלה (ترتيب العمود: #{curColIndex + 1} מתוך {holisticColumns.length}):
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        disabled={curColIndex === 0}
+                        onClick={() => handleMoveHolisticColumn(activeCol.id, -1)}
+                        style={{
+                          background: '#ffffff',
+                          color: '#1e40af',
+                          border: '1.5px solid #60a5fa',
+                          padding: '0.42rem 0.8rem',
+                          borderRadius: '8px',
+                          fontWeight: 900,
+                          fontSize: '0.8rem',
+                          cursor: curColIndex === 0 ? 'not-allowed' : 'pointer',
+                          opacity: curColIndex === 0 ? 0.4 : 1
+                        }}
+                      >
+                        ▶ הזז ימינה
+                      </button>
+
+                      <select
+                        value={curColIndex}
+                        onChange={(e) => handleMoveHolisticColumn(activeCol.id, Number(e.target.value), true)}
+                        style={{
+                          padding: '0.42rem 0.65rem',
+                          borderRadius: '8px',
+                          border: '1.5px solid #2563eb',
+                          fontWeight: 900,
+                          fontSize: '0.8rem',
+                          background: '#ffffff',
+                          color: '#0f172a',
+                          cursor: 'pointer'
+                        }}
+                        title="اختر رقم موقع العمود مباشرة"
+                      >
+                        {holisticColumns.map((c, idx) => (
+                          <option key={c.id} value={idx}>
+                            מיקום #{idx + 1} {idx === curColIndex ? '(נוכחי)' : `— ${c.titleHe}`}
+                          </option>
+                        ))}
+                      </select>
+
+                      <button
+                        type="button"
+                        disabled={curColIndex === holisticColumns.length - 1}
+                        onClick={() => handleMoveHolisticColumn(activeCol.id, 1)}
+                        style={{
+                          background: '#ffffff',
+                          color: '#1e40af',
+                          border: '1.5px solid #60a5fa',
+                          padding: '0.42rem 0.8rem',
+                          borderRadius: '8px',
+                          fontWeight: 900,
+                          fontSize: '0.8rem',
+                          cursor: curColIndex === holisticColumns.length - 1 ? 'not-allowed' : 'pointer',
+                          opacity: curColIndex === holisticColumns.length - 1 ? 0.4 : 1
+                        }}
+                      >
+                        הזז שמאלה ◀
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Selection Mode Switcher: Single Choice vs Multi Choice */}
               <div
