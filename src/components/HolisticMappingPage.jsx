@@ -3288,14 +3288,6 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                       >
                         <button
                           type="button"
-                          onClick={() => scrollSheetHorizontally('start')}
-                          title="חזרה לתחילת השורה (ימינה)"
-                          style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '7px', padding: '3px 7px', cursor: 'pointer', fontWeight: 900, fontSize: '0.78rem', color: '#1e3a8a' }}
-                        >
-                          ⏮
-                        </button>
-                        <button
-                          type="button"
                           onClick={() => scrollSheetHorizontally('right')}
                           title="הזז את הגיליון ימינה"
                           style={{ background: '#ffffff', border: '1px solid #93c5fd', borderRadius: '7px', padding: '3px 9px', cursor: 'pointer', fontWeight: 900, fontSize: '0.8rem', color: '#1d4ed8' }}
@@ -3309,14 +3301,6 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                           style={{ background: '#2563eb', border: 'none', borderRadius: '7px', padding: '4px 10px', cursor: 'pointer', fontWeight: 900, fontSize: '0.8rem', color: '#ffffff' }}
                         >
                           המשך השורה ◀
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => scrollSheetHorizontally('end')}
-                          title="קפוץ לסוף השורה (שמאלה)"
-                          style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '7px', padding: '3px 7px', cursor: 'pointer', fontWeight: 900, fontSize: '0.78rem', color: '#1e3a8a' }}
-                        >
-                          ⏭
                         </button>
                       </div>
                     )}
@@ -3369,7 +3353,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                         return (
                           <th key={`sub_${col.id}`}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', flexWrap: 'wrap' }}>
-                              <span>{isColumnMultiSelect(col) ? '☑️ בחירה מרובה' : '🔘 בחירה יחידה'}</span>
+                              <span title={isColumnMultiSelect(col) ? 'בחירה מרובה' : 'בחירה יחידה'}>{isColumnMultiSelect(col) ? '☑️' : '🔘'}</span>
                               {userCapabilities.canManageSchema && (
                                 <>
                                   <button
@@ -3410,7 +3394,7 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
                                     }}
                                   >
                                     <span>✏️</span>
-                                    <span>עריכת אפשרויות</span>
+                                    <span>אפשרויות</span>
                                   </button>
                                   <button
                                     type="button"
