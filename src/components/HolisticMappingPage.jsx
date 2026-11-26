@@ -2877,28 +2877,65 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
             </button>
 
             {userCapabilities.canViewAllClasses && (
-              <button
-                type="button"
-                onClick={handleExportAllClassesMaster}
-                style={{
-                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                  color: '#ffffff',
-                  border: '1.5px solid #fde68a',
-                  padding: '0.55rem 1rem',
-                  borderRadius: '12px',
-                  fontWeight: 900,
-                  cursor: 'pointer',
-                  fontSize: '0.84rem',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  boxShadow: '0 4px 12px rgba(245, 158, 11, 0.35)'
-                }}
-                title="חילוץ וייצוא כל 19 הכיתות לקובץ אקסל מאוחד / استخراج وتلخيص كل الصفوف لملف إكسل"
-              >
-                <span>📥</span>
-                <span>חילוץ כל 19 הכיתות (استخراج كل الصفوف)</span>
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      sessionStorage.setItem(
+                        'musherfe_holistic_ai_ctx',
+                        JSON.stringify({
+                          year: selectedYear,
+                          period: selectedPeriod,
+                          classId: selectedClassId
+                        })
+                      );
+                    } catch {}
+                    window.location.hash = '#/holistic-analytics';
+                  }}
+                  style={{
+                    background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+                    color: '#ffffff',
+                    border: '2px solid #fde68a',
+                    padding: '0.55rem 1.05rem',
+                    borderRadius: '12px',
+                    fontWeight: 900,
+                    cursor: 'pointer',
+                    fontSize: '0.86rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    boxShadow: '0 6px 18px rgba(124, 58, 237, 0.45)'
+                  }}
+                  title="انتقل إلى صفحة تحليل المعلومات والذكاء الاصطناعي المستقلة (حصري للمدير والمركزة جيهان)"
+                >
+                  <span>🧠</span>
+                  <span>تحليل المعلومات والذكاء الاصطناعي (ניתוח חכם ו-AI)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleExportAllClassesMaster}
+                  style={{
+                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                    color: '#ffffff',
+                    border: '1.5px solid #fde68a',
+                    padding: '0.55rem 1rem',
+                    borderRadius: '12px',
+                    fontWeight: 900,
+                    cursor: 'pointer',
+                    fontSize: '0.84rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    boxShadow: '0 4px 12px rgba(245, 158, 11, 0.35)'
+                  }}
+                  title="חילוץ וייצוא כל 19 הכיתות לקובץ אקסל מאוחד / استخراج وتلخيص كل الصفوف لملف إكسل"
+                >
+                  <span>📥</span>
+                  <span>חילוץ כל 19 הכיתות (استخراج كل الصفوف)</span>
+                </button>
+              </>
             )}
 
             {activeTeacher && (
@@ -3026,6 +3063,33 @@ const HolisticMappingPage = ({ isAdminEmbed = false }) => {
 
           {userCapabilities.canViewAllClasses && (
             <>
+              <button
+                type="button"
+                className="holistic-tab-btn"
+                onClick={() => {
+                  try {
+                    sessionStorage.setItem(
+                      'musherfe_holistic_ai_ctx',
+                      JSON.stringify({
+                        year: selectedYear,
+                        period: selectedPeriod,
+                        classId: selectedClassId
+                      })
+                    );
+                  } catch {}
+                  window.location.hash = '#/holistic-analytics';
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                  color: '#ffffff',
+                  border: '2px solid #fbbf24',
+                  boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)'
+                }}
+              >
+                <span>🧠</span>
+                <span>تحليل المعلومات والذكاء الاصطناعي (صفحة مستقلة — AI) ↗</span>
+              </button>
+
               <button
                 type="button"
                 className={`holistic-tab-btn ${activeMainTab === 'grade-analytics' ? 'active' : ''}`}

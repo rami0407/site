@@ -72,6 +72,7 @@ const QanatPage = lazyWithRetry(() => import('./components/QanatPage'));
 const AflamMaharatPage = lazyWithRetry(() => import('./components/AflamMaharatPage'));
 const SchoolPadletPage = lazyWithRetry(() => import('./components/SchoolPadletPage'));
 const HolisticMappingPage = lazyWithRetry(() => import('./components/HolisticMappingPage'));
+const HolisticAiAnalyticsPage = lazyWithRetry(() => import('./components/HolisticAiAnalyticsPage'));
 const TeacherProfilePage = lazyWithRetry(() => import('./components/TeacherProfilePage'));
 const RavenExamPage = lazyWithRetry(() => import('./components/RavenExamPage'));
 const FloatingActions = lazyWithRetry(() => import('./components/FloatingActions'));
@@ -195,10 +196,14 @@ function App() {
     currentHash.includes('teacher-profile') ||
     currentHash === '#/profile' ||
     currentHash.startsWith('#/profile?');
+  const isHolisticAnalyticsView =
+    currentHash.includes('holistic-analytics') ||
+    currentHash.includes('holistic-ai');
   const isHolisticMappingView =
-    currentHash.includes('holistic-mapping') ||
-    currentHash.includes('holistic') ||
-    currentHash.includes('mipui');
+    !isHolisticAnalyticsView &&
+    (currentHash.includes('holistic-mapping') ||
+      currentHash.includes('holistic') ||
+      currentHash.includes('mipui'));
   const isRavenTeacherView =
     currentHash.includes('raven-teacher') ||
     currentHash.includes('raven-monitor') ||
@@ -228,6 +233,14 @@ function App() {
     return (
       <Suspense fallback={<Loader />}>
         <TeacherProfilePage />
+      </Suspense>
+    );
+  }
+
+  if (isHolisticAnalyticsView) {
+    return (
+      <Suspense fallback={<Loader />}>
+        <HolisticAiAnalyticsPage />
       </Suspense>
     );
   }
